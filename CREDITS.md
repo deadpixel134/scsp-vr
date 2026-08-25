@@ -1,6 +1,6 @@
 # 크레딧 및 외부 라이선스
 
-SCSP VR 자체 소스의 저작권은 기여자에게 있으며 [GNU General Public License v3.0](LICENSE.txt)으로 배포됩니다. 아래 구성 요소와 참조 소스에는 각 프로젝트의 라이선스가 별도로 적용됩니다.
+SCSP VR 자체 소스의 저작권은 Copyright (C) 2026 deadpixel134 및 기여자에게 있으며 [GNU General Public License v3.0](LICENSE)으로 배포됩니다. SCSP-localify 생태계에서 유래한 로더 통합 부분과 아래 구성 요소·참조 소스에는 각 프로젝트의 라이선스가 별도로 적용됩니다.
 
 | 구성 요소 | 용도 | 배포 포함 | 라이선스·출처 |
 |---|---|---:|---|

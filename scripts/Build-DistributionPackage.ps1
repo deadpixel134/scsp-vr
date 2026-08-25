@@ -86,7 +86,7 @@ try {
         (Join-Path $payloadRoot 'vrmod\tools\SongPrismVR.Configurator.exe')
     Copy-OwnedFile (Join-Path $vrmodRoot 'release-assets\default-settings.json') `
         (Join-Path $payloadRoot 'vrmod\config\settings.json')
-    Copy-OwnedFile (Join-Path $vrmodRoot 'LICENSE.txt') (Join-Path $payloadRoot 'vrmod\LICENSE.txt')
+    Copy-OwnedFile (Join-Path $vrmodRoot 'LICENSE') (Join-Path $payloadRoot 'vrmod\LICENSE.txt')
     Copy-OwnedFile (Join-Path $vrmodRoot 'release-assets\THIRD_PARTY_NOTICES.txt') `
         (Join-Path $payloadRoot 'vrmod\THIRD_PARTY_NOTICES.txt')
     Copy-OwnedFile (Join-Path $vrmodRoot 'release-assets\licenses\Dobby-Apache-2.0.txt') `

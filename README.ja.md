@@ -63,6 +63,6 @@ dotnet run --project tests/SongPrismVR.Core.Tests/SongPrismVR.Core.Tests.csproj 
 
 ## ライセンスとクレジット
 
-SCSP VRのソースは [GNU General Public License v3.0](LICENSE.txt) で配布されます。同梱されるOpenXR Loader、.NET Runtime、Unity Doorstop、Dobbyにはそれぞれのライセンスが適用されます。正確な出典と条件は [CREDITS.md](CREDITS.md) および [THIRD_PARTY_NOTICES.txt](release-assets/THIRD_PARTY_NOTICES.txt) をご確認ください。
+SCSP VRのソースは [GNU General Public License v3.0](LICENSE) で配布されます。同梱されるOpenXR Loader、.NET Runtime、Unity Doorstop、Dobbyにはそれぞれのライセンスが適用されます。正確な出典と条件は [CREDITS.md](CREDITS.md) および [THIRD_PARTY_NOTICES.txt](release-assets/THIRD_PARTY_NOTICES.txt) をご確認ください。
 
 本プロジェクトは非公式のファンプロジェクトであり、Bandai Namco Entertainment、Bandai Namco Studios、THE IDOLM@STER、その他の権利者とは提携しておらず、承認も受けていません。ゲーム名、キャラクター、ロゴ、商標、ゲームデータの権利は各権利者に帰属します。

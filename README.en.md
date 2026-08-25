@@ -63,6 +63,6 @@ Distribution builds use `scripts/Build-DistributionPackage.ps1` inside a support
 
 ## License and credits
 
-SCSP VR source is distributed under the [GNU General Public License v3.0](LICENSE.txt). The bundled OpenXR Loader, .NET Runtime, Unity Doorstop, and Dobby remain under their respective licenses. See [CREDITS.md](CREDITS.md) and [THIRD_PARTY_NOTICES.txt](release-assets/THIRD_PARTY_NOTICES.txt) for exact sources and terms.
+SCSP VR source is distributed under the [GNU General Public License v3.0](LICENSE). The bundled OpenXR Loader, .NET Runtime, Unity Doorstop, and Dobby remain under their respective licenses. See [CREDITS.md](CREDITS.md) and [THIRD_PARTY_NOTICES.txt](release-assets/THIRD_PARTY_NOTICES.txt) for exact sources and terms.
 
 This is an unofficial fan project and is not affiliated with or endorsed by Bandai Namco Entertainment, Bandai Namco Studios, THE IDOLM@STER, or any related rights holder. Game names, characters, logos, trademarks, and game data belong to their respective owners.
