@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = '0.1.1-preview.1',
+    [string]$Version = '0.1.1',
     [string]$OutputRoot,
     [switch]$SkipBuild
 )
@@ -15,6 +15,8 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $vrmodRoot 'release'
 }
 $releaseRoot = [System.IO.Path]::GetFullPath($OutputRoot)
+$runtimeBuildRoot = Join-Path $vrmodRoot 'src\SongPrismVR.RuntimeBootstrap\bin\Release\net6.0'
+$nativeBuildRoot = Join-Path $vrmodRoot 'artifacts\native'
 if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') {
     throw "Version must use semantic major.minor.patch[-prerelease] form: $Version"
 }
@@ -77,10 +79,22 @@ try {
     foreach ($name in @(
         'SongPrismVR.RuntimeBootstrap.dll',
         'SongPrismVR.RuntimeBootstrap.deps.json',
-        'SongPrismVR.Core.dll',
-        'SongPrismVR.UnityD3D12Probe.dll',
-        'openxr_loader.dll')) {
-        Copy-OwnedFile (Join-Path $vrmodRoot "runtime\$name") (Join-Path $payloadRoot "vrmod\runtime\$name")
+        'SongPrismVR.Core.dll')) {
+        Copy-OwnedFile (Join-Path $runtimeBuildRoot $name) (Join-Path $payloadRoot "vrmod\runtime\$name")
+    }
+    Copy-OwnedFile (Join-Path $nativeBuildRoot 'SongPrismVR.UnityD3D12Probe.dll') `
+        (Join-Path $payloadRoot 'vrmod\runtime\SongPrismVR.UnityD3D12Probe.dll')
+    Copy-OwnedFile (Join-Path $vrmodRoot 'runtime\openxr_loader.dll') `
+        (Join-Path $payloadRoot 'vrmod\runtime\openxr_loader.dll')
+
+    $packagedRuntime = Join-Path $payloadRoot 'vrmod\runtime\SongPrismVR.RuntimeBootstrap.dll'
+    $runtimeProductVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo(
+        $packagedRuntime).ProductVersion
+    if ([string]::IsNullOrWhiteSpace($runtimeProductVersion) -or
+        -not $runtimeProductVersion.StartsWith(
+            $Version,
+            [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Runtime product version '$runtimeProductVersion' does not match package version '$Version'."
     }
     Copy-OwnedFile (Join-Path $configuratorPublish 'SongPrismVR.Configurator.exe') `
         (Join-Path $payloadRoot 'vrmod\tools\SongPrismVR.Configurator.exe')

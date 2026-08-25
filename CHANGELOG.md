@@ -1,6 +1,12 @@
 # SONGforPRISM VR runtime changelog
 
-## 0.1.1-preview.1 — 2026-08-25
+## 0.1.1 — 2026-08-25
+
+### Stable baseline
+
+- Promoted the user-validated `SPVR-CAND-VR-DEFERRED-SOURCE-FRAME-001-D8409815` behavior to the v0.1.1 stable release line.
+- Removed the unsafe direct source-camera completion hook and retained the launch-stable one-frame-deferred source gate.
+- Documented the remaining VR-only character/body and hair divergence with intermittent character disappearance as a known deferred issue; flat output remains normal.
 
 ### Installer, release, and automatic updates
 

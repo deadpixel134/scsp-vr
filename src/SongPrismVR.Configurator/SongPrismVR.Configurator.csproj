@@ -8,7 +8,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NuGetAudit>false</NuGetAudit>
     <AssemblyName>SongPrismVR.Configurator</AssemblyName>
-    <Version>0.1.1-preview.1</Version>
+    <Version>0.1.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SongPrismVR.Core\SongPrismVR.Core.csproj" />

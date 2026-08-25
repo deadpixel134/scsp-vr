@@ -19,6 +19,8 @@ var tests = new (string Name, Action Run)[]
     ("Analog click cancels shallow presses", AnalogClickCancelsShallowPress),
     ("Stereo startup waits for frames and Present", StereoStartupWaitsForFramesAndPresent),
     ("Stereo startup reset requires a fresh generation", StereoStartupResetRequiresFreshGeneration),
+    ("Stereo source render gate waits for a later frame and claims once", StereoSourceRenderGateWaitsForLaterFrame),
+    ("Stereo source render gate rearms when the source changes", StereoSourceRenderGateRearmsForSourceChange),
     ("Black stereo frames retry before timeout", BlackStereoFramesRetryBeforeTimeout),
     ("Black stereo frame policy resets per generation", BlackStereoFramePolicyResetsPerGeneration),
     ("6DoF origin preserves configured eye separation", SixDofOriginPreservesEyeSeparation),
@@ -667,6 +669,30 @@ static void VrSettingsPreserveProductDefaults()
     Equal(1, result.Settings.Render.ManualVisualEffects.VlBloomDiffusion);
     Equal(false, result.Settings.Render.ManualVisualEffects.VlDepthOfFieldEnabled);
     Equal(false, result.Settings.Render.ManualVisualEffects.VlTextureBlurEnabled);
+}
+
+static void StereoSourceRenderGateWaitsForLaterFrame()
+{
+    var gate = new StereoSourceRenderPumpGate();
+    gate.SetSource(sourceToken: 101, observedFrame: 10);
+
+    False(gate.TryClaim(frameCount: 10));
+    True(gate.TryClaim(frameCount: 11));
+    False(gate.TryClaim(frameCount: 11));
+    True(gate.TryClaim(frameCount: 12));
+}
+
+static void StereoSourceRenderGateRearmsForSourceChange()
+{
+    var gate = new StereoSourceRenderPumpGate();
+    gate.SetSource(sourceToken: 101, observedFrame: 10);
+    True(gate.TryClaim(frameCount: 11));
+
+    gate.SetSource(sourceToken: 202, observedFrame: 11);
+    False(gate.TryClaim(frameCount: 11));
+    True(gate.TryClaim(frameCount: 12));
+    gate.Reset();
+    False(gate.TryClaim(frameCount: 13));
 }
 
 static void SpatialHeadTranslationSharesEyeWorldScale()

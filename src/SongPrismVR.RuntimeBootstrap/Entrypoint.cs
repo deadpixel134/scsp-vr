@@ -61,7 +61,7 @@ public static class Entrypoint
 internal static class RuntimeProbe
 {
     private static readonly object LogLock = new();
-    internal const string BootstrapVersion = "0.1.1-preview.1";
+    internal const string BootstrapVersion = "0.1.1";
     private const int ModuleTimeoutMilliseconds = 60_000;
     private const int DomainTimeoutMilliseconds = 60_000;
     private static readonly JsonSerializerOptions JsonOptions = new()

@@ -11,7 +11,7 @@ public sealed class BootstrapPlugin : BasePlugin
 {
     public const string PluginGuid = "io.github.songprismvr.bootstrap";
     public const string PluginName = "SongPrismVR Bootstrap";
-    public const string PluginVersion = "0.1.1-preview.1";
+    public const string PluginVersion = "0.1.1";
 
     public override void Load()
     {

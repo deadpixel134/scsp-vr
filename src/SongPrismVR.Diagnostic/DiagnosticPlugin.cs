@@ -9,7 +9,7 @@ public sealed class DiagnosticPlugin : BasePlugin
 {
     public const string PluginGuid = "io.github.songprismvr.diagnostic";
     public const string PluginName = "SongPrismVR Diagnostic";
-    public const string PluginVersion = "0.1.1-preview.1";
+    public const string PluginVersion = "0.1.1";
 
     public override void Load()
     {

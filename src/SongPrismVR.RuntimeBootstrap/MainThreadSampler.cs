@@ -70,6 +70,7 @@ internal sealed class MainThreadSampler
     private readonly SixDofPoseMapper _physicalOrientationPoseMapper = new();
     private readonly VrLocomotionIntegrator _locomotionIntegrator = new();
     private readonly VrViewTurnIntegrator _viewTurnIntegrator = new();
+    private readonly StereoSourceRenderPumpGate _stereoSourceRenderPumpGate = new();
     private FrameCountDelegate? _original;
     private IntPtr _dobbyLibrary;
     private long _lastSampleMilliseconds;
@@ -235,7 +236,6 @@ internal sealed class MainThreadSampler
     private DoVlDofDelegate? _doVlDofOriginal;
     private DoVlTextureBlurDelegate? _doVlTextureBlurOriginal;
     private bool _drawFlareHookInstalled;
-    private bool _characterHairBoundaryDiagnosticsLogged;
     private int _renderingDataCameraDataOffset;
     private int _cameraDataCameraOffset;
     private int _insideCloneVlPostProcess;
@@ -422,16 +422,16 @@ internal sealed class MainThreadSampler
         {
             int observedStereoFrame = Volatile.Read(ref _lastStereoPumpFrameCount);
             if (frameCount != observedStereoFrame &&
-                Interlocked.CompareExchange(
-                    ref _lastStereoPumpFrameCount,
-                    frameCount,
-                    observedStereoFrame) == observedStereoFrame &&
                 Interlocked.CompareExchange(ref _stereoLifecycleBusy, 1, 0) == 0)
             {
                 try
                 {
-                    D3D12DeviceCapture.RefreshPresentSerial();
-                    TryPumpStereo();
+                    if (_stereoSourceRenderPumpGate.TryClaim(frameCount))
+                    {
+                        Volatile.Write(ref _lastStereoPumpFrameCount, frameCount);
+                        D3D12DeviceCapture.RefreshPresentSerial();
+                        TryPumpStereo();
+                    }
                 }
                 finally
                 {
@@ -453,7 +453,7 @@ internal sealed class MainThreadSampler
                             now,
                             previous) == previous)
                     {
-                        TryCapture();
+                        TryCapture(frameCount);
                     }
                 }
                 finally
@@ -479,7 +479,7 @@ internal sealed class MainThreadSampler
         return frameCount;
     }
 
-    private void TryCapture()
+    private void TryCapture(int frameCount)
     {
         _api.ThreadAttach(_domain);
         IntPtr coreImage = FindImage("UnityEngine.CoreModule.dll");
@@ -855,6 +855,9 @@ internal sealed class MainThreadSampler
             _stereoPumpSourceCamera = stereoPumpEligible
                 ? _lastLiveCamera
                 : IntPtr.Zero;
+            _stereoSourceRenderPumpGate.SetSource(
+                _stereoPumpSourceCamera.ToInt64(),
+                frameCount);
             _stereoPumpSourceCameraHandle = stereoPumpEligible
                 ? RootObject(_stereoPumpSourceCamera, "stereo source camera")
                 : 0;
@@ -1325,6 +1328,7 @@ internal sealed class MainThreadSampler
             generationObjectsAreLive: false);
         _stereoPumpEligible = false;
         _stereoPumpSourceCamera = IntPtr.Zero;
+        _stereoSourceRenderPumpGate.Reset();
         _stereoPumpSourceCameraHandle = 0;
         _stereoPumpSourceTexture = IntPtr.Zero;
         _stereoPumpSourceProfileSignature = string.Empty;
@@ -3160,8 +3164,6 @@ internal sealed class MainThreadSampler
     {
         try
         {
-            TryLogCharacterHairBoundaryDiagnostics(now);
-
             if (_stereoNaturalRenderArmed)
             {
                 long presentDelta = D3D12DeviceCapture.PresentSerial -
@@ -5437,60 +5439,6 @@ internal sealed class MainThreadSampler
                 ErrorType = exception.GetType().FullName,
                 Error = exception.Message,
                 StereoVisualEffectMode = _stereoVisualEffectMode
-            });
-        }
-    }
-
-    private void TryLogCharacterHairBoundaryDiagnostics(DateTimeOffset now)
-    {
-        if (_characterHairBoundaryDiagnosticsLogged)
-        {
-            return;
-        }
-
-        _characterHairBoundaryDiagnosticsLogged = true;
-        try
-        {
-            (string Namespace, string Name)[] targets =
-            {
-                ("MagicaCloth2", "CullingSettings"),
-                ("MagicaCloth2", "ClothProcess"),
-                ("MagicaCloth2", "RenderManager"),
-                ("PRISM", "HairZBiasController"),
-                ("PRISM", "CharacterShaderManager")
-            };
-            List<string> descriptions = new();
-            foreach ((string namespaze, string name) in targets)
-            {
-                IntPtr klass = FindClassAcrossImages(namespaze, name);
-                descriptions.Add(DescribeClassHierarchy(klass));
-            }
-
-            RuntimeProbe.Append(_logPath, new ProbeEvent
-            {
-                TimestampUtc = now,
-                Event = "character-hair-boundary-observability",
-                BootstrapVersion = RuntimeProbe.BootstrapVersion,
-                ProcessId = Environment.ProcessId,
-                Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
-                Reason =
-                    "Manual D3D12 clone cameras are disabled outside their " +
-                    "same-frame Camera.Render_Injected calls. Exact candidate " +
-                    "culling/update/render owners: " +
-                    string.Join(" || ", descriptions)
-            });
-        }
-        catch (Exception exception)
-        {
-            RuntimeProbe.Append(_logPath, new ProbeEvent
-            {
-                TimestampUtc = now,
-                Event = "character-hair-boundary-observability-failure",
-                BootstrapVersion = RuntimeProbe.BootstrapVersion,
-                ProcessId = Environment.ProcessId,
-                Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
-                ErrorType = exception.GetType().FullName,
-                Error = exception.Message
             });
         }
     }
