@@ -4,7 +4,7 @@
 
 제작자: [@TBluebox12](https://x.com/TBluebox12)\
 아카라이브 가상현실 채널: [가상현실 채널](https://arca.live/b/vrshits)\
-후원: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)\
+후원: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)
 
 **아이돌마스터 샤이니 컬러즈 Song for Prism** DMM PC판을 OpenXR VR로 플레이하기 위한 비공식 모드입니다.
 
