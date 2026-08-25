@@ -2,11 +2,12 @@
 
 # SCSP VR
 
-**アイドルマスター シャイニーカラーズ Song for Prism** DMM PC版向けの非公式OpenXR VR Modです。
-
 制作者: [@TBluebox12](https://x.com/TBluebox12)\
 Arca.live VRチャンネル: [VRチャンネル](https://arca.live/b/vrshits)\
 支援: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)\
+
+**アイドルマスター シャイニーカラーズ Song for Prism** DMM PC版向けの非公式OpenXR VR Modです。
+
 [不具合報告](https://github.com/deadpixel134/scsp-vr/issues)
 
 ## 現在のリリース
