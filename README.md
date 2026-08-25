@@ -4,7 +4,10 @@
 
 **아이돌마스터 샤이니 컬러즈 Song for Prism** DMM PC판을 OpenXR VR로 플레이하기 위한 비공식 모드입니다.
 
-개발 및 유지보수: [deadpixel134](https://github.com/deadpixel134) · [문제 보고](https://github.com/deadpixel134/scsp-vr/issues)
+제작자: [@TBluebox12](https://x.com/TBluebox12)\
+아카라이브 가상현실 채널: [가상현실 채널](https://arca.live/b/vrshits)\
+후원: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)\
+[문제 보고](https://github.com/deadpixel134/scsp-vr/issues)
 
 ## 현재 릴리스
 

@@ -4,7 +4,10 @@
 
 An unofficial OpenXR VR mod for the DMM PC version of **THE iDOLM@STER Shiny Colors: Song for Prism**.
 
-Developed and maintained by [deadpixel134](https://github.com/deadpixel134) · [Report an issue](https://github.com/deadpixel134/scsp-vr/issues)
+Creator: [@TBluebox12](https://x.com/TBluebox12)\
+Arca.live Virtual Reality channel: [Virtual Reality channel](https://arca.live/b/vrshits)\
+Support: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)\
+[Report an issue](https://github.com/deadpixel134/scsp-vr/issues)
 
 ## Current release
 
