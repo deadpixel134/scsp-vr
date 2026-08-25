@@ -4,7 +4,7 @@
 
 制作者: [@TBluebox12](https://x.com/TBluebox12)\
 Arca.live VRチャンネル: [VRチャンネル](https://arca.live/b/vrshits)\
-支援: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)\
+支援: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)
 
 **アイドルマスター シャイニーカラーズ Song for Prism** DMM PC版向けの非公式OpenXR VR Modです。
 
