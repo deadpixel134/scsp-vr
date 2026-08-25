@@ -1,0 +1,42 @@
+# Workspace-local state and generated outputs
+/.cache/
+/.dotnet-home/
+/.nuget-packages/
+/.tmp/
+/.vrpm/
+/artifacts/
+/baseline/
+/build/
+/config/
+/licenses/
+/logs/
+/release/
+/rollback/
+/runtime/
+/tools/
+/vendor/
+/install-state.json
+
+# Build outputs
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/.zig-cache/
+**/zig-out/
+**/__pycache__/
+*.py[cod]
+*.user
+*.suo
+*.pdb
+
+# Local and packaged binaries are release artifacts, not source
+*.dll
+*.exe
+*.zip
+*.sha256
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+desktop.ini

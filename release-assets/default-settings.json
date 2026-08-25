@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "enabled": true
+  },
+  "render": {
+    "eyeRenderScale": 0.65,
+    "worldEyeOffsetScale": 0.275,
+    "visualEffectMode": "all-off",
+    "manualVisualEffects": {
+      "postProcessingEnabled": true,
+      "vlBloomEnabled": true,
+      "vlBloomIntensityScale": 1.4,
+      "vlBloomDiffusion": 1,
+      "vlDepthOfFieldEnabled": false,
+      "vlTextureBlurEnabled": false,
+      "vlStarStreakEnabled": true,
+      "vlFlareEnabled": true
+    }
+  },
+  "tracking": {
+    "liveSixDofEnabled": true,
+    "locomotionEnabled": true,
+    "locomotionHand": "right",
+    "locomotionSpeed": 1.95,
+    "viewTurnMode": "snap",
+    "viewTurnSpeed": 90,
+    "viewSnapAngleDegrees": 30
+  },
+  "spatial": {
+    "live": {
+      "perceivedCharacterScale": 1,
+      "eyeOffsetMode": "auto",
+      "eyeOffsetMultiplier": 1,
+      "headTranslationMode": "auto",
+      "headTranslationMultiplier": 1,
+      "locomotionMode": "auto",
+      "locomotionMultiplier": 1
+    },
+    "nonLive": {
+      "perceivedCharacterScale": 1,
+      "eyeOffsetMode": "auto",
+      "eyeOffsetMultiplier": 1,
+      "headTranslationMode": "auto",
+      "headTranslationMultiplier": 1,
+      "locomotionMode": "auto",
+      "locomotionMultiplier": 1
+    }
+  },
+  "panel": {
+    "panelHand": "left",
+    "pointerHand": "right",
+    "startEnabled": false,
+    "viewerFacing": true,
+    "offsetX": 0,
+    "offsetY": 0.1,
+    "offsetZ": 0,
+    "maximumWidth": 0.42,
+    "maximumHeight": 0.42,
+    "rotationPitch": 0,
+    "rotationYaw": 0,
+    "rotationRoll": 0,
+    "visibilityHysteresisMilliseconds": 100,
+    "toggleBinding": "grip"
+  },
+  "input": {
+    "primaryClickButton": "primary",
+    "backButton": "secondary",
+    "triggerClickEnabled": true,
+    "thumbstickScrollEnabled": false,
+    "scrollSensitivity": 1,
+    "requireGameFocus": true
+  }
+}

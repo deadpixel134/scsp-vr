@@ -1,0 +1,36 @@
+SongPrism VR third-party notices
+=================================
+
+This release bundles third-party components under their respective licenses.
+The SongPrism VR project license does not replace these terms.
+
+1. Khronos OpenXR Loader 1.1.59 (bundled)
+Source: https://github.com/KhronosGroup/OpenXR-SDK-Source/releases/tag/release-1.1.59
+License: Apache-2.0 OR MIT. This distribution elects the MIT option.
+Copyright (c) The Khronos Group Inc.
+
+2. .NET Runtime 6.0.7 (bundled for the Unity runtime bootstrap)
+Source: https://github.com/dotnet/runtime/tree/v6.0.7
+License: MIT
+License: https://github.com/dotnet/runtime/blob/v6.0.7/LICENSE.TXT
+Third-party notices: https://github.com/dotnet/runtime/blob/v6.0.7/THIRD-PARTY-NOTICES.TXT
+Copyright (c) .NET Foundation and Contributors
+
+3. .NET Windows Desktop Runtime 10 (bundled into the self-contained installer and configurator)
+Source: https://github.com/dotnet/runtime
+License: MIT
+License: https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
+Third-party notices: https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT
+Copyright (c) .NET Foundation and Contributors
+
+4. Unity Doorstop 4.5.0 (winhttp.dll bundled)
+Source: https://github.com/NeighTools/UnityDoorstop/tree/v4.5.0
+License: LGPL-2.1
+License: https://github.com/NeighTools/UnityDoorstop/blob/v4.5.0/LICENSE
+The release uses an unmodified Doorstop binary to start the packaged .NET runtime.
+
+5. Dobby (BepInEx/core/dobby.dll bundled)
+Source: https://github.com/jmpews/Dobby
+License: Apache-2.0
+The complete license text is included at vrmod/licenses/Dobby-Apache-2.0.txt.
+If another installation already owns the target file, the installer preserves it.

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NuGetAudit>false</NuGetAudit>
+    <AssemblyName>SongPrismVR.Installer</AssemblyName>
+    <Version>0.1.1-preview.1</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SongPrismVR.Management\SongPrismVR.Management.csproj" />
+  </ItemGroup>
+</Project>
