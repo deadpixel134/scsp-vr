@@ -1,5 +1,18 @@
 # SONGforPRISM VR runtime changelog
 
+## 0.1.2 — 2026-09-20
+
+### [Issue #1](https://github.com/deadpixel134/scsp-vr/issues/1) improvements
+
+- Added 3D stereo rendering support for Photo Studio scenes.
+- Kept the established 3D stereo source active while a 3D Live is paused, avoiding a fallback to the flat panel during temporary camera loss.
+- Added one-to-one space-drag locomotion with independent left/right Grip and Trigger activators, independent tracked hands, first-press ownership, and simultaneous thumbstick locomotion.
+- Split thumbstick view turning into its own setting and added localized configurator controls, conflict guidance, and validation for world dragging.
+
+### Compatibility note
+
+- Documented that `scsp-localify`'s free-camera option conflicts with VR rendering. Users must disable `baseFreeCamera.enable` before starting the game; SCSP VR does not change this Localify setting automatically.
+
 ## 0.1.1 — 2026-08-25
 
 ### Stable baseline

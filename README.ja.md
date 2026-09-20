@@ -12,15 +12,15 @@ Arca.live VRチャンネル: [VRチャンネル](https://arca.live/b/vrshits)\
 
 ## 現在のリリース
 
-現在の公開ビルドはプレリリース [`v0.1.1-preview.1`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.1-preview.1) です。Windows x64、DMM PC版、OpenXRランタイムを対象としています。
+現在の公開ビルドは [`v0.1.2`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.2) です。Windows x64、DMM PC版、OpenXRランタイムを対象としています。
 
-このプレリリースは実際のゲームとHMDで引き続き検証中です。ゲームやOpenXRランタイムの更新により動作が変わる可能性があるため、インストール前にリリースノートをご確認ください。
+ゲームやOpenXRランタイムの更新により動作が変わる可能性があるため、インストール前にリリースノートをご確認ください。
 
 ## 主な機能
 
 - ゲームカメラをOpenXRステレオビューとしてレンダリング
 - 縦画面・横画面・ライブシーンに応じたVR表示
-- OpenXRコントローラーポインターとVR移動・視点設定
+- OpenXRコントローラーポインター、スティック移動、手でワールドを掴んで引く移動、独立した視点回転設定
 - 韓国語・英語・日本語対応の設定アプリとインストーラー
 - `scsp-localify` の `version.dll`、設定、翻訳データを保持した共存インストール
 - 韓国語パッチのないクリーンなゲームフォルダーにもインストール可能
@@ -44,7 +44,8 @@ Arca.live VRチャンネル: [VRチャンネル](https://arca.live/b/vrshits)\
 ## 重要な制限事項
 
 - DMM PC版専用です。Steam版・モバイル版には対応していません。
-- プレリリースのため、すべてのHMD、OpenXRランタイム、グラフィック設定の組み合わせを保証しません。
+- すべてのHMD、OpenXRランタイム、グラフィック設定の組み合わせを保証するものではありません。
+- **`scsp-localify` のFree CameraオプションはVRレンダリングと同時に使用できません。** ゲーム起動前に `scsp-config.json` の `baseFreeCamera.enable` を `false` に設定してください。SCSP VRはこの値を自動で変更・復元しません。
 - ゲーム更新後は、互換性が確認されるまでModを削除するか新しいリリースをお待ちください。
 - VRランタイムの初期化失敗時もゲームを続行する設計ですが、すべての失敗経路が実機承認済みではありません。
 - ゲームファイル、ゲームアセット、`scsp-localify` の翻訳データはリポジトリやリリースに含みません。
@@ -63,7 +64,7 @@ dotnet run --project tests/SongPrismVR.Management.Tests/SongPrismVR.Management.T
 dotnet run --project tests/SongPrismVR.Core.Tests/SongPrismVR.Core.Tests.csproj -c Release
 ```
 
-配布ビルドには、対応ゲームワークスペース内で `scripts/Build-DistributionPackage.ps1` を使用します。ゲームおよび第三者バイナリはリポジトリへコミットしません。
+配布ビルドには、対応ゲームフォルダーを指定して `scripts/Build-DistributionPackage.ps1 -GameRoot <ゲームフォルダー>` を使用します。ゲームおよび第三者バイナリはリポジトリへコミットしません。
 
 ## ライセンスとクレジット
 

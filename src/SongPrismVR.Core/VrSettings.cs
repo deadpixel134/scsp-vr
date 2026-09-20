@@ -57,7 +57,12 @@ public sealed class VrSettings
 
     public VrInputSettings Input { get; set; } = new();
 
-    public static VrSettings CreateApprovedDefaults() => new();
+    public static VrSettings CreateApprovedDefaults()
+    {
+        VrSettings settings = new();
+        settings.Tracking.ViewTurnEnabled = true;
+        return settings;
+    }
 }
 
 public sealed class VrRuntimeSettings
@@ -86,11 +91,35 @@ public sealed class VrTrackingSettings
 
     public float LocomotionSpeed { get; set; } = 1.95f;
 
+    // Null is reserved for schema-1 files written before this setting existed.
+    // Validation maps it to LocomotionEnabled so the former combined toggle is
+    // backward compatible.
+    public bool? ViewTurnEnabled { get; set; }
+
+    public VrWorldDragSettings WorldDrag { get; set; } = new();
+
     public VrViewTurnMode ViewTurnMode { get; set; } = VrViewTurnMode.Snap;
 
     public float ViewTurnSpeed { get; set; } = 90f;
 
     public int ViewSnapAngleDegrees { get; set; } = 30;
+}
+
+public sealed class VrWorldDragSettings
+{
+    public bool Enabled { get; set; }
+
+    public bool LeftGripActivation { get; set; }
+
+    public bool LeftTriggerActivation { get; set; }
+
+    public bool RightGripActivation { get; set; } = true;
+
+    public bool RightTriggerActivation { get; set; }
+
+    public bool TrackLeftHand { get; set; }
+
+    public bool TrackRightHand { get; set; } = true;
 }
 
 public static class VrLivePositionPolicy
@@ -228,6 +257,7 @@ public static class VrSettingsValidator
             render.ManualVisualEffects ?? defaults.Render.ManualVisualEffects;
         VrPanelSettings panel = source.Panel ?? defaults.Panel;
         VrInputSettings input = source.Input ?? defaults.Input;
+        VrWorldDragSettings worldDrag = tracking.WorldDrag ?? defaults.Tracking.WorldDrag;
 
         VrSettings validated = new()
         {
@@ -293,6 +323,8 @@ public static class VrSettingsValidator
                     defaults.Tracking.LocomotionSpeed,
                     "tracking.locomotionSpeed",
                     issues),
+                ViewTurnEnabled = tracking.ViewTurnEnabled ?? tracking.LocomotionEnabled,
+                WorldDrag = ValidateWorldDrag(worldDrag, issues),
                 ViewTurnMode = ValidateEnum(
                     tracking.ViewTurnMode,
                     defaults.Tracking.ViewTurnMode,
@@ -373,6 +405,40 @@ public static class VrSettingsValidator
         }
 
         return Result(validated, issues);
+    }
+
+    private static VrWorldDragSettings ValidateWorldDrag(
+        VrWorldDragSettings source,
+        List<string> issues)
+    {
+        bool hasActivation = source.LeftGripActivation ||
+            source.LeftTriggerActivation ||
+            source.RightGripActivation ||
+            source.RightTriggerActivation;
+        bool hasTrackedHand = source.TrackLeftHand || source.TrackRightHand;
+        bool requestedEnabled = source.Enabled;
+        bool enabled = requestedEnabled;
+        if (requestedEnabled && !hasActivation)
+        {
+            issues.Add("tracking.worldDrag.activation:none-selected");
+            enabled = false;
+        }
+        if (requestedEnabled && !hasTrackedHand)
+        {
+            issues.Add("tracking.worldDrag.trackedHand:none-selected");
+            enabled = false;
+        }
+
+        return new VrWorldDragSettings
+        {
+            Enabled = enabled,
+            LeftGripActivation = source.LeftGripActivation,
+            LeftTriggerActivation = source.LeftTriggerActivation,
+            RightGripActivation = source.RightGripActivation,
+            RightTriggerActivation = source.RightTriggerActivation,
+            TrackLeftHand = source.TrackLeftHand,
+            TrackRightHand = source.TrackRightHand
+        };
     }
 
     private static VrSettingsValidationResult Result(VrSettings settings, List<string> issues) =>

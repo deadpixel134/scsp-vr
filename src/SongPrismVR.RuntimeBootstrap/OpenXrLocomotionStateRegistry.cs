@@ -1,10 +1,15 @@
+using SongPrismVR.Core;
+
 namespace Doorstop;
 
 internal readonly record struct OpenXrLocomotionStateSnapshot(
     float AxisX,
     float AxisY,
     float ViewTurnAxisX,
-    float ViewTurnAxisY);
+    float ViewTurnAxisY,
+    float WorldDragDeltaX,
+    float WorldDragDeltaY,
+    float WorldDragDeltaZ);
 
 internal static class OpenXrLocomotionStateRegistry
 {
@@ -13,6 +18,9 @@ internal static class OpenXrLocomotionStateRegistry
     private static float _axisY;
     private static float _viewTurnAxisX;
     private static float _viewTurnAxisY;
+    private static float _worldDragDeltaX;
+    private static float _worldDragDeltaY;
+    private static float _worldDragDeltaZ;
     private static long _updatedMilliseconds;
 
     public static void Update(
@@ -37,6 +45,23 @@ internal static class OpenXrLocomotionStateRegistry
         }
     }
 
+    public static void AddWorldDragDelta(TrackingVector3 delta)
+    {
+        if (!float.IsFinite(delta.X) || !float.IsFinite(delta.Y) ||
+            !float.IsFinite(delta.Z))
+        {
+            return;
+        }
+
+        lock (Sync)
+        {
+            _worldDragDeltaX += delta.X;
+            _worldDragDeltaY += delta.Y;
+            _worldDragDeltaZ += delta.Z;
+            _updatedMilliseconds = Environment.TickCount64;
+        }
+    }
+
     public static OpenXrLocomotionStateSnapshot? Snapshot(
         int maximumAgeMilliseconds)
     {
@@ -45,14 +70,24 @@ internal static class OpenXrLocomotionStateRegistry
             if (_updatedMilliseconds == 0 ||
                 Environment.TickCount64 - _updatedMilliseconds > maximumAgeMilliseconds)
             {
+                _worldDragDeltaX = 0f;
+                _worldDragDeltaY = 0f;
+                _worldDragDeltaZ = 0f;
                 return null;
             }
 
-            return new OpenXrLocomotionStateSnapshot(
+            OpenXrLocomotionStateSnapshot snapshot = new(
                 _axisX,
                 _axisY,
                 _viewTurnAxisX,
-                _viewTurnAxisY);
+                _viewTurnAxisY,
+                _worldDragDeltaX,
+                _worldDragDeltaY,
+                _worldDragDeltaZ);
+            _worldDragDeltaX = 0f;
+            _worldDragDeltaY = 0f;
+            _worldDragDeltaZ = 0f;
+            return snapshot;
         }
     }
 
@@ -64,6 +99,9 @@ internal static class OpenXrLocomotionStateRegistry
             _axisY = 0f;
             _viewTurnAxisX = 0f;
             _viewTurnAxisY = 0f;
+            _worldDragDeltaX = 0f;
+            _worldDragDeltaY = 0f;
+            _worldDragDeltaZ = 0f;
             _updatedMilliseconds = 0;
         }
     }

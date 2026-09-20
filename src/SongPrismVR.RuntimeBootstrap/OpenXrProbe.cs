@@ -912,6 +912,7 @@ internal static class OpenXrProbe
                     {
                         controllerFrame = controllerActions.Update(
                             frameState.PredictedDisplayTime,
+                            localSpace,
                             localSpace);
                     }
                     catch (Exception exception)

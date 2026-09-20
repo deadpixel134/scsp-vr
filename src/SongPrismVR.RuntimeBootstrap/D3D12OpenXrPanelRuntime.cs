@@ -502,6 +502,9 @@ internal static class D3D12OpenXrPanelRuntime
             VrPointerInput? pointerInput = controllerActions is null
                 ? null
                 : new VrPointerInput(VrSettingsRuntime.Current.Input);
+            OpenXrWorldDragInput? worldDragInput = controllerActions is null
+                ? null
+                : new OpenXrWorldDragInput(VrSettingsRuntime.Current);
             PanelResources? handPanel = null;
             if (controllerActions is not null)
             {
@@ -521,6 +524,7 @@ internal static class D3D12OpenXrPanelRuntime
                 {
                     pointerInput?.Dispose();
                     pointerInput = null;
+                    worldDragInput = null;
                     controllerActions.Dispose();
                     controllerActions = null;
                 }
@@ -543,6 +547,7 @@ internal static class D3D12OpenXrPanelRuntime
                     handPanel,
                     controllerActions,
                     pointerInput,
+                    worldDragInput,
                     device,
                     sessionQueue,
                     frameGameSwapChain,
@@ -737,6 +742,7 @@ internal static class D3D12OpenXrPanelRuntime
         PanelResources? handPanel,
         OpenXrControllerActions? controllerActions,
         VrPointerInput? pointerInput,
+        OpenXrWorldDragInput? worldDragInput,
         IntPtr device,
         IntPtr queue,
         IntPtr gameSwapChain,
@@ -944,7 +950,8 @@ internal static class D3D12OpenXrPanelRuntime
                     {
                         controllerFrame = controllerActions.Update(
                             frameState.PredictedDisplayTime,
-                            viewSpace);
+                            viewSpace,
+                            worldSpace);
                     }
                     catch (Exception exception)
                     {
@@ -1327,6 +1334,13 @@ internal static class D3D12OpenXrPanelRuntime
                     }
                 }
 
+                bool pointerHitPresentedPanel =
+                    presentedPanelLayerPointer != IntPtr.Zero && pointerHit;
+                worldDragInput?.Update(
+                    controllerFrame,
+                    pointerHitPresentedPanel,
+                    stereoLayerReady);
+
                 XrFrameEndInfo frameEndInfo = new()
                 {
                     Type = XrTypeFrameEndInfo,
@@ -1366,7 +1380,7 @@ internal static class D3D12OpenXrPanelRuntime
                     break;
                 }
                 _ = pointerInput?.Update(
-                    presentedPanelLayerPointer != IntPtr.Zero && pointerHit,
+                    pointerHitPresentedPanel,
                     pointerU,
                     pointerV,
                     controllerFrame);

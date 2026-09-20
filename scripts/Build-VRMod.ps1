@@ -1,10 +1,16 @@
 [CmdletBinding()]
 param(
-    [string]$GameRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+    [string]$GameRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path,
+    [string]$ProjectRoot
 )
 
 $ErrorActionPreference = 'Stop'
-$vrmodRoot = Join-Path $GameRoot 'vrmod'
+$gameRoot = [System.IO.Path]::GetFullPath($GameRoot)
+$vrmodRoot = if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    Join-Path $gameRoot 'vrmod'
+} else {
+    [System.IO.Path]::GetFullPath($ProjectRoot)
+}
 $env:DOTNET_CLI_HOME = Join-Path $vrmodRoot '.dotnet-home'
 $env:NUGET_PACKAGES = Join-Path $vrmodRoot '.nuget-packages'
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'

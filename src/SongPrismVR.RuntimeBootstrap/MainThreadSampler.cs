@@ -45,6 +45,8 @@ internal sealed class MainThreadSampler
     private readonly VrSpatialScaleProfile _nonLiveSpatialProfile;
     private readonly bool _liveSixDofEnabled;
     private readonly bool _locomotionEnabled;
+    private readonly bool _viewTurnEnabled;
+    private readonly bool _worldDragEnabled;
     private readonly VrHand _locomotionHand;
     private readonly float _locomotionSpeed;
     private readonly VrViewTurnMode _viewTurnMode;
@@ -96,6 +98,8 @@ internal sealed class MainThreadSampler
     private bool _m6NonLiveWorldSurfaceEligible;
     private IntPtr _directWorldCandidateCamera;
     private string _directWorldCandidateProfileSignature = string.Empty;
+    private string _directWorldCandidateKind = string.Empty;
+    private string _directWorldCandidateScene = string.Empty;
     private bool _directWorldCandidateHasUiStack;
     private bool _directWorldCandidateRequiresCostumeContext;
     private bool _directWorldCandidateRequiresStoryContext;
@@ -105,8 +109,13 @@ internal sealed class MainThreadSampler
     private long _directWorldObservedCaptureSerial = -1;
     private IntPtr _directWorldStableCamera;
     private string _directWorldStableProfileSignature = string.Empty;
+    private string _directWorldStableKind = string.Empty;
+    private string _directWorldStableScene = string.Empty;
     private int _directWorldStableCaptureCount;
     private bool _directNonLiveWorldEligible;
+    private string _directNonLiveWorldKind = string.Empty;
+    private string _directNonLiveWorldScene = string.Empty;
+    private string _lastApprovedPhotoStudioScene = string.Empty;
     private bool _directNonLiveWorldRequiresStoryCameraSync;
     private int _directWorldRequiredUiOverlayCount;
     private long _lastNativeTextureRefreshMilliseconds;
@@ -168,6 +177,7 @@ internal sealed class MainThreadSampler
     private DateTimeOffset _nextUiReplayLogUtc = DateTimeOffset.MinValue;
     private IntPtr _lastLiveCamera;
     private string _lastLiveCameraProfileSignature = string.Empty;
+    private bool _liveStereoSourceRetained;
     private bool _stereoCloneSetupAttempted;
     private IntPtr _stereoLeftCamera;
     private IntPtr _stereoRightCamera;
@@ -357,6 +367,9 @@ internal sealed class MainThreadSampler
         _stereoSpatialMultipliers = SpatialScaleResolver.Resolve(_liveSpatialProfile);
         _liveSixDofEnabled = settings.Tracking.LiveSixDofEnabled;
         _locomotionEnabled = settings.Tracking.LocomotionEnabled;
+        _viewTurnEnabled = settings.Tracking.ViewTurnEnabled.GetValueOrDefault(
+            settings.Tracking.LocomotionEnabled);
+        _worldDragEnabled = settings.Tracking.WorldDrag.Enabled;
         _locomotionHand = settings.Tracking.LocomotionHand;
         _locomotionSpeed = settings.Tracking.LocomotionSpeed;
         _viewTurnMode = settings.Tracking.ViewTurnMode;
@@ -887,7 +900,7 @@ internal sealed class MainThreadSampler
                     ? nonLiveStereoEligible
                         ? _m6NonLiveWorldSurfaceEligible
                             ? $"M6 approved an active world-presenting RawImage ({_m6WorldSurfacePath}) bound to the Game3DManager target; stereo requires a dynamic UI-difference layer. sourceChanged={stereoSourceChanged}."
-                            : $"A stable direct-to-backbuffer URP base camera with an approved required UI overlay topology was accepted; the cloned camera stack carries that UI. sourceChanged={stereoSourceChanged}."
+                            : $"A stable direct-to-backbuffer URP base camera with an approved required UI overlay topology was accepted; the cloned camera stack carries that UI. kind={_directNonLiveWorldKind};scene={_directNonLiveWorldScene};sourceChanged={stereoSourceChanged}."
                         : $"A valid source camera is bound in a concrete env_3d_live scene; stereo production may start or resume. sourceChanged={stereoSourceChanged}."
                     : "Stereo is paused and old eye/UI textures were cleared until an approved world-presenting surface and source camera are available."
             });
@@ -2083,6 +2096,37 @@ internal sealed class MainThreadSampler
             stack[0].Equals("UICamera", StringComparison.Ordinal);
     }
 
+    private static bool IsPhotoStudioScene(string scene) =>
+        scene.StartsWith(
+            "dioramabackground_",
+            StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsPhotoStudioCameraPath(string path) =>
+        path.StartsWith(
+            "DioramaBackground_",
+            StringComparison.OrdinalIgnoreCase) &&
+        path.EndsWith("/Main Camera", StringComparison.Ordinal);
+
+    private static bool HasPhotoStudioNonLiveUiStack(CameraUrpProbeData urp)
+    {
+        IReadOnlyList<string> stack =
+            urp.CameraStackNames ?? Array.Empty<string>();
+        return urp.Present &&
+            urp.RenderType == 0 &&
+            urp.CameraStackCount == stack.Count &&
+            stack.Count >= 1 &&
+            stack.Count(name =>
+                name.Equals("UICamera", StringComparison.Ordinal)) == 1 &&
+            stack.All(name =>
+                name.Equals("UICamera", StringComparison.Ordinal) ||
+                name.Equals(
+                    "OverlayCanvasAboveBlurCamera",
+                    StringComparison.Ordinal) ||
+                name.Equals(
+                    "OverlayCanvasBelowBlurCamera",
+                    StringComparison.Ordinal));
+    }
+
     private static bool IsCostumeChangeUiPath(string path) =>
         path.Contains("/CostumeChangeTopView/", StringComparison.Ordinal);
 
@@ -2149,7 +2193,18 @@ internal sealed class MainThreadSampler
         if (candidateValid && worldSurfaceRawImage != IntPtr.Zero)
         {
             ResetDirectNonLiveTopologyStability();
+            if (_directNonLiveWorldEligible &&
+                _directNonLiveWorldKind.Equals(
+                    "photo-studio",
+                    StringComparison.Ordinal))
+            {
+                AppendPhotoStudioStereoSourceReleased(
+                    scene,
+                    "A render-texture-backed non-live source replaced the photo-studio direct camera.");
+            }
             _directNonLiveWorldEligible = false;
+            _directNonLiveWorldKind = string.Empty;
+            _directNonLiveWorldScene = string.Empty;
             _directNonLiveWorldRequiresStoryCameraSync = false;
             _directWorldRequiredUiOverlayCount = 0;
             _lastLiveCamera = _m6WorldCandidateCamera;
@@ -2178,6 +2233,10 @@ internal sealed class MainThreadSampler
             screenWidth > screenHeight &&
             _directWorldCandidateCamera != IntPtr.Zero &&
             _directWorldCandidateHasUiStack &&
+            string.Equals(
+                _directWorldCandidateScene,
+                scene,
+                StringComparison.OrdinalIgnoreCase) &&
             (!_directWorldCandidateRequiresCostumeContext ||
                 costumeChangeUiVisible) &&
             (!_directWorldCandidateRequiresStoryContext ||
@@ -2185,12 +2244,30 @@ internal sealed class MainThreadSampler
                     _directWorldCandidateStoryRoot,
                     storyUiRoot,
                     StringComparison.Ordinal));
-        if (directCandidateValid && IsDirectNonLiveTopologyStable())
+        bool directCandidateStable = directCandidateValid &&
+            IsDirectNonLiveTopologyStable();
+        if (directCandidateStable)
         {
+            bool photoStudioCandidate = _directWorldCandidateKind.Equals(
+                "photo-studio",
+                StringComparison.Ordinal);
+            bool photoStudioWasActive = _directNonLiveWorldEligible &&
+                _directNonLiveWorldKind.Equals(
+                    "photo-studio",
+                    StringComparison.Ordinal);
+            string previousPhotoStudioScene = _lastApprovedPhotoStudioScene;
+            bool photoStudioChanged = photoStudioCandidate &&
+                (!photoStudioWasActive ||
+                    !string.Equals(
+                        previousPhotoStudioScene,
+                        scene,
+                        StringComparison.OrdinalIgnoreCase));
             _m6NonLiveWorldSurfaceEligible = false;
             _m6WorldSurfaceRawImage = IntPtr.Zero;
             _m6WorldSurfacePath = string.Empty;
             _directNonLiveWorldEligible = true;
+            _directNonLiveWorldKind = _directWorldCandidateKind;
+            _directNonLiveWorldScene = _directWorldCandidateScene;
             _directNonLiveWorldRequiresStoryCameraSync =
                 _directWorldCandidateRequiresStoryContext;
             _directWorldRequiredUiOverlayCount =
@@ -2203,7 +2280,67 @@ internal sealed class MainThreadSampler
             _lastLiveTargetWidth = 0;
             _lastLiveTargetHeight = 0;
             _lastNativeTextureRefreshMilliseconds = 0;
+            if (photoStudioChanged)
+            {
+                _lastApprovedPhotoStudioScene = scene;
+                RuntimeProbe.Append(_logPath, new ProbeEvent
+                {
+                    TimestampUtc = DateTimeOffset.UtcNow,
+                    Event = previousPhotoStudioScene.Length == 0
+                            || string.Equals(
+                                previousPhotoStudioScene,
+                                scene,
+                                StringComparison.OrdinalIgnoreCase)
+                        ? "photo-studio-stereo-source-approved"
+                        : "photo-studio-stereo-background-rebound",
+                    BootstrapVersion = RuntimeProbe.BootstrapVersion,
+                    ProcessId = Environment.ProcessId,
+                    Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
+                    Scene = scene,
+                    Reason = previousPhotoStudioScene.Length == 0
+                            || string.Equals(
+                                previousPhotoStudioScene,
+                                scene,
+                                StringComparison.OrdinalIgnoreCase)
+                        ? "A stable photo-studio Main Camera and approved UI overlay stack were accepted for non-live 6DoF stereo."
+                        : $"The photo-studio stereo source moved from {previousPhotoStudioScene} to {scene}; the new stable camera generation was accepted."
+                });
+            }
             return;
+        }
+
+        bool activeDirectSourceChanged = _directNonLiveWorldEligible &&
+            directCandidateValid &&
+            (_lastLiveCamera != _directWorldCandidateCamera ||
+                !_lastLiveCameraProfileSignature.Equals(
+                    _directWorldCandidateProfileSignature,
+                    StringComparison.Ordinal) ||
+                !_directNonLiveWorldKind.Equals(
+                    _directWorldCandidateKind,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    _directNonLiveWorldScene,
+                    _directWorldCandidateScene,
+                    StringComparison.OrdinalIgnoreCase));
+        if (activeDirectSourceChanged)
+        {
+            if (_directNonLiveWorldKind.Equals(
+                    "photo-studio",
+                    StringComparison.Ordinal))
+            {
+                AppendPhotoStudioStereoSourceReleased(
+                    scene,
+                    "A different photo-studio camera, background, or UI stack is stabilizing; the previous stereo generation was released before rebinding.");
+            }
+            _directNonLiveWorldEligible = false;
+            _directNonLiveWorldKind = string.Empty;
+            _directNonLiveWorldScene = string.Empty;
+            _directNonLiveWorldRequiresStoryCameraSync = false;
+            _directWorldRequiredUiOverlayCount = 0;
+            _lastLiveCamera = IntPtr.Zero;
+            _lastLiveCameraProfileSignature = string.Empty;
+            UnityRenderSourceRegistry.ClearLiveWorldTexture();
+            UnityRenderSourceRegistry.ClearStereoTextures();
         }
 
         if (!candidateValid || worldSurfaceRawImage == IntPtr.Zero)
@@ -2212,8 +2349,19 @@ internal sealed class MainThreadSampler
             {
                 ResetDirectNonLiveTopologyStability();
             }
+            if (_directNonLiveWorldEligible &&
+                _directNonLiveWorldKind.Equals(
+                    "photo-studio",
+                    StringComparison.Ordinal))
+            {
+                AppendPhotoStudioStereoSourceReleased(
+                    scene,
+                    "The photo-studio scene or its approved camera/UI topology is no longer active; stereo returned to the safe panel path.");
+            }
             _m6NonLiveWorldSurfaceEligible = false;
             _directNonLiveWorldEligible = false;
+            _directNonLiveWorldKind = string.Empty;
+            _directNonLiveWorldScene = string.Empty;
             _directNonLiveWorldRequiresStoryCameraSync = false;
             _directWorldRequiredUiOverlayCount = 0;
             _m6WorldSurfaceRawImage = IntPtr.Zero;
@@ -2227,6 +2375,22 @@ internal sealed class MainThreadSampler
             _lastNativeTextureRefreshMilliseconds = 0;
             return;
         }
+    }
+
+    private void AppendPhotoStudioStereoSourceReleased(
+        string scene,
+        string reason)
+    {
+        RuntimeProbe.Append(_logPath, new ProbeEvent
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            Event = "photo-studio-stereo-source-released",
+            BootstrapVersion = RuntimeProbe.BootstrapVersion,
+            ProcessId = Environment.ProcessId,
+            Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
+            Scene = scene,
+            Reason = reason
+        });
     }
 
     private static bool M6WorldGeometryMatchesScreen(
@@ -2455,6 +2619,9 @@ internal sealed class MainThreadSampler
 
     private IReadOnlyList<CameraProbeRecord> CaptureCameras(IntPtr coreImage, string scene)
     {
+        IntPtr establishedLiveCamera = _lastLiveCamera;
+        string establishedLiveProfileSignature = _lastLiveCameraProfileSignature;
+        bool retentionWasActive = _liveStereoSourceRetained;
         IntPtr getAllCameras = FindMethod(coreImage, "UnityEngine", "Camera", "get_allCameras");
         IntPtr cameraArray = Invoke(getAllCameras, IntPtr.Zero);
         if (cameraArray == IntPtr.Zero)
@@ -2478,6 +2645,8 @@ internal sealed class MainThreadSampler
         _m6WorldCandidateTargetHeight = 0;
         _directWorldCandidateCamera = IntPtr.Zero;
         _directWorldCandidateProfileSignature = string.Empty;
+        _directWorldCandidateKind = string.Empty;
+        _directWorldCandidateScene = string.Empty;
         _directWorldCandidateHasUiStack = false;
         _directWorldCandidateRequiresCostumeContext = false;
         _directWorldCandidateRequiresStoryContext = false;
@@ -2573,6 +2742,14 @@ internal sealed class MainThreadSampler
                 cameraActive &&
                 targetTexture == IntPtr.Zero &&
                 HasCostumeNonLiveUiStack(urp);
+            bool photoStudioCandidate =
+                IsPhotoStudioScene(scene) &&
+                cameraName.Equals("Main Camera", StringComparison.Ordinal) &&
+                IsPhotoStudioCameraPath(cameraPath) &&
+                cameraEnabled &&
+                cameraActive &&
+                targetTexture == IntPtr.Zero &&
+                HasPhotoStudioNonLiveUiStack(urp);
             bool storyCandidate =
                 !IsLiveScene(scene) &&
                 cameraName.Equals("MainCamera", StringComparison.Ordinal) &&
@@ -2582,15 +2759,24 @@ internal sealed class MainThreadSampler
                 targetTexture == IntPtr.Zero &&
                 HasStoryNonLiveUiStack(urp);
             if (directHomeCandidate ||
-                ((storyCandidate || costumeCandidate) &&
+                ((photoStudioCandidate || storyCandidate || costumeCandidate) &&
                     _directWorldCandidateCamera == IntPtr.Zero))
             {
                 gameWorldCameraFound = true;
                 _directWorldCandidateCamera = camera;
                 _directWorldCandidateProfileSignature =
                     CreateStereoSourceProfileSignature(urp);
+                _directWorldCandidateKind = directHomeCandidate
+                    ? "home"
+                    : photoStudioCandidate
+                        ? "photo-studio"
+                        : storyCandidate
+                            ? "story"
+                            : "costume";
+                _directWorldCandidateScene = scene;
                 _directWorldCandidateHasUiStack = true;
-                _directWorldCandidateRequiresCostumeContext = costumeCandidate;
+                _directWorldCandidateRequiresCostumeContext =
+                    costumeCandidate && !photoStudioCandidate;
                 _directWorldCandidateRequiresStoryContext = storyCandidate;
                 _directWorldCandidateStoryRoot = storyCandidate
                     ? storyRoot
@@ -2631,7 +2817,18 @@ internal sealed class MainThreadSampler
                 if (IsLiveScene(scene))
                 {
                     _m6NonLiveWorldSurfaceEligible = false;
+                    if (_directNonLiveWorldEligible &&
+                        _directNonLiveWorldKind.Equals(
+                            "photo-studio",
+                            StringComparison.Ordinal))
+                    {
+                        AppendPhotoStudioStereoSourceReleased(
+                            scene,
+                            "A live scene replaced the photo-studio direct camera.");
+                    }
                     _directNonLiveWorldEligible = false;
+                    _directNonLiveWorldKind = string.Empty;
+                    _directNonLiveWorldScene = string.Empty;
                     _directNonLiveWorldRequiresStoryCameraSync = false;
                     _directWorldRequiredUiOverlayCount = 0;
                     _m6WorldSurfaceRawImage = IntPtr.Zero;
@@ -2660,7 +2857,18 @@ internal sealed class MainThreadSampler
             {
                 gameWorldCameraFound = true;
                 _m6NonLiveWorldSurfaceEligible = false;
+                if (_directNonLiveWorldEligible &&
+                    _directNonLiveWorldKind.Equals(
+                        "photo-studio",
+                        StringComparison.Ordinal))
+                {
+                    AppendPhotoStudioStereoSourceReleased(
+                        scene,
+                        "A live scene replaced the photo-studio direct camera.");
+                }
                 _directNonLiveWorldEligible = false;
+                _directNonLiveWorldKind = string.Empty;
+                _directNonLiveWorldScene = string.Empty;
                 _directNonLiveWorldRequiresStoryCameraSync = false;
                 _directWorldRequiredUiOverlayCount = 0;
                 _m6WorldSurfaceRawImage = IntPtr.Zero;
@@ -2768,12 +2976,98 @@ internal sealed class MainThreadSampler
             });
         }
 
-        if (!gameWorldCameraFound)
+        bool approvedLiveSourceFound =
+            IsConcreteLive3DScene(scene) &&
+            gameWorldCameraFound &&
+            approvedWorldTextureFound &&
+            _lastLiveCamera != IntPtr.Zero &&
+            _lastLiveCameraProfileSignature.Length > 0;
+        if (approvedLiveSourceFound)
         {
+            if (retentionWasActive)
+            {
+                bool sameSource = LiveStereoSourceRetentionPolicy.IsSameSource(
+                    establishedLiveCamera.ToInt64(),
+                    _lastLiveCamera.ToInt64());
+                AppendLiveStereoSourceContinuityEvent(
+                    sameSource
+                        ? "live-stereo-source-resumed"
+                        : "live-stereo-source-replaced",
+                    scene,
+                    sameSource
+                        ? "The active live camera returned; the retained stereo generation continues without recreation."
+                        : "A different approved live camera replaced the retained source; the normal source-change path will recreate the stereo generation.");
+            }
+            _liveStereoSourceRetained = false;
+        }
+        else if (retentionWasActive &&
+            gameWorldCameraFound &&
+            !IsConcreteLive3DScene(scene))
+        {
+            AppendLiveStereoSourceContinuityEvent(
+                "live-stereo-source-retention-ended",
+                scene,
+                "The live scene ended and another world camera became active; the retained live source will be released through the normal source-change path.");
+            _liveStereoSourceRetained = false;
+        }
+
+        bool establishedSourceAlive = IsUnityObjectAlive(
+            coreImage,
+            establishedLiveCamera);
+        bool retainEstablishedLiveSource =
+            !gameWorldCameraFound &&
+            LiveStereoSourceRetentionPolicy.ShouldRetain(
+                IsConcreteLive3DScene(scene),
+                string.Equals(_stereoPumpScene, scene, StringComparison.Ordinal),
+                _stereoPumpEligible &&
+                    _stereoPumpSourceCamera == establishedLiveCamera &&
+                    establishedLiveCamera != IntPtr.Zero &&
+                    establishedLiveProfileSignature.Length > 0,
+                establishedSourceAlive);
+
+        if (retainEstablishedLiveSource)
+        {
+            _lastLiveCamera = establishedLiveCamera;
+            _lastLiveCameraProfileSignature = establishedLiveProfileSignature;
+            if (_lastLiveTargetTexture != IntPtr.Zero)
+            {
+                _ = UnityRenderSourceRegistry.TouchLiveWorldTexture(
+                    "retained-live-source");
+            }
+            if (!retentionWasActive)
+            {
+                AppendLiveStereoSourceContinuityEvent(
+                    "live-stereo-source-retained",
+                    scene,
+                    "The approved live camera temporarily left Camera.allCameras but its native object remains alive; stereo rendering and UI capture will continue with the established source.");
+            }
+            _liveStereoSourceRetained = true;
+        }
+        else if (!gameWorldCameraFound)
+        {
+            if (retentionWasActive)
+            {
+                AppendLiveStereoSourceContinuityEvent(
+                    "live-stereo-source-retention-ended",
+                    scene,
+                    $"The retained live source is no longer safe; stereo will use the normal fail-open cleanup path. concreteLive={IsConcreteLive3DScene(scene)};sameScene={string.Equals(_stereoPumpScene, scene, StringComparison.Ordinal)};approved={establishedLiveProfileSignature.Length > 0};sourceAlive={establishedSourceAlive}.");
+            }
+            _liveStereoSourceRetained = false;
             _lastLiveCamera = IntPtr.Zero;
             _lastLiveCameraProfileSignature = string.Empty;
             _m6NonLiveWorldSurfaceEligible = false;
+            if (_directNonLiveWorldEligible &&
+                _directNonLiveWorldKind.Equals(
+                    "photo-studio",
+                    StringComparison.Ordinal))
+            {
+                AppendPhotoStudioStereoSourceReleased(
+                    scene,
+                    "The photo-studio world camera left Camera.allCameras; stereo returned to the safe panel path.");
+            }
             _directNonLiveWorldEligible = false;
+            _directNonLiveWorldKind = string.Empty;
+            _directNonLiveWorldScene = string.Empty;
             _directNonLiveWorldRequiresStoryCameraSync = false;
             _directWorldRequiredUiOverlayCount = 0;
             _m6WorldSurfaceRawImage = IntPtr.Zero;
@@ -2784,14 +3078,59 @@ internal sealed class MainThreadSampler
             _lastLiveTargetHeight = 0;
             _lastNativeTextureRefreshMilliseconds = 0;
         }
-        else if (IsLiveScene(scene) && !approvedWorldTextureFound)
+        else if (IsLiveScene(scene) &&
+            (!approvedWorldTextureFound ||
+                _lastLiveCameraProfileSignature.Length == 0))
         {
+            if (retentionWasActive)
+            {
+                AppendLiveStereoSourceContinuityEvent(
+                    "live-stereo-source-retention-ended",
+                    scene,
+                    "An active world camera was found, but its world source or camera profile was not approved; stereo will use the normal fail-open cleanup path.");
+            }
+            _liveStereoSourceRetained = false;
             _lastLiveCamera = IntPtr.Zero;
             _lastLiveCameraProfileSignature = string.Empty;
             UnityRenderSourceRegistry.ClearLiveWorldTexture();
         }
 
         return cameras;
+    }
+
+    private bool IsUnityObjectAlive(IntPtr coreImage, IntPtr managedObject)
+    {
+        if (managedObject == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        try
+        {
+            return GetCachedNativeObjectPointer(coreImage, managedObject) != IntPtr.Zero;
+        }
+        catch (AccessViolationException)
+        {
+            return false;
+        }
+    }
+
+    private void AppendLiveStereoSourceContinuityEvent(
+        string eventName,
+        string scene,
+        string reason)
+    {
+        RuntimeProbe.Append(_logPath, new ProbeEvent
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            Event = eventName,
+            BootstrapVersion = RuntimeProbe.BootstrapVersion,
+            ProcessId = Environment.ProcessId,
+            Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
+            Scene = scene,
+            StereoCloneReady = _stereoCloneSetupReady,
+            Reason = reason
+        });
     }
 
     private CameraUrpProbeData CaptureCameraUrpData(
@@ -4277,14 +4616,15 @@ internal sealed class MainThreadSampler
                 (float)Stopwatch.Frequency;
         _lastLocomotionUpdateTimestamp = timestamp;
 
-        OpenXrLocomotionStateSnapshot? input = _locomotionEnabled
+        OpenXrLocomotionStateSnapshot? input =
+            (_locomotionEnabled || _viewTurnEnabled || _worldDragEnabled)
             ? OpenXrLocomotionStateRegistry.Snapshot(
                 LocomotionInputMaximumAgeMilliseconds)
             : null;
-        float axisX = input?.AxisX ?? 0f;
-        float axisY = input?.AxisY ?? 0f;
-        float viewTurnAxisX = input?.ViewTurnAxisX ?? 0f;
-        float viewTurnAxisY = input?.ViewTurnAxisY ?? 0f;
+        float axisX = _locomotionEnabled ? input?.AxisX ?? 0f : 0f;
+        float axisY = _locomotionEnabled ? input?.AxisY ?? 0f : 0f;
+        float viewTurnAxisX = _viewTurnEnabled ? input?.ViewTurnAxisX ?? 0f : 0f;
+        float viewTurnAxisY = _viewTurnEnabled ? input?.ViewTurnAxisY ?? 0f : 0f;
         bool turning = ((viewTurnAxisX * viewTurnAxisX) +
             (viewTurnAxisY * viewTurnAxisY)) >
             LocomotionDeadzone * LocomotionDeadzone;
@@ -4329,6 +4669,16 @@ internal sealed class MainThreadSampler
                 LocomotionDeadzone))
         {
             moving = false;
+        }
+        if (_worldDragEnabled && input is OpenXrLocomotionStateSnapshot dragInput)
+        {
+            _ = _locomotionIntegrator.ApplyWorldDrag(
+                new TrackingVector3(
+                    dragInput.WorldDragDeltaX,
+                    dragInput.WorldDragDeltaY,
+                    dragInput.WorldDragDeltaZ),
+                navigationWorldRotation,
+                _stereoSpatialMultipliers.LocomotionMultiplier);
         }
 
         if (moving != _locomotionWasMoving)
@@ -5010,7 +5360,15 @@ internal sealed class MainThreadSampler
                 string.Equals(
                     _directWorldStableProfileSignature,
                     _directWorldCandidateProfileSignature,
-                    StringComparison.Ordinal))
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    _directWorldStableKind,
+                    _directWorldCandidateKind,
+                    StringComparison.Ordinal) &&
+                string.Equals(
+                    _directWorldStableScene,
+                    _directWorldCandidateScene,
+                    StringComparison.OrdinalIgnoreCase))
             {
                 _directWorldStableCaptureCount = Math.Min(
                     DirectTopologyRequiredStableCaptures,
@@ -5021,6 +5379,8 @@ internal sealed class MainThreadSampler
                 _directWorldStableCamera = _directWorldCandidateCamera;
                 _directWorldStableProfileSignature =
                     _directWorldCandidateProfileSignature;
+                _directWorldStableKind = _directWorldCandidateKind;
+                _directWorldStableScene = _directWorldCandidateScene;
                 _directWorldStableCaptureCount = 1;
             }
         }
@@ -5034,6 +5394,8 @@ internal sealed class MainThreadSampler
         _directWorldObservedCaptureSerial = -1;
         _directWorldStableCamera = IntPtr.Zero;
         _directWorldStableProfileSignature = string.Empty;
+        _directWorldStableKind = string.Empty;
+        _directWorldStableScene = string.Empty;
         _directWorldStableCaptureCount = 0;
     }
 

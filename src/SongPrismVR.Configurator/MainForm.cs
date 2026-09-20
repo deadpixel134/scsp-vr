@@ -51,8 +51,23 @@ internal sealed class MainForm : Form
     private readonly ComboBox _back = ChoiceCombo();
     private readonly CheckBox _trigger = TaggedCheckBox("TriggerEnabled");
     private readonly CheckBox _locomotion = TaggedCheckBox("LocomotionEnabled");
+    private readonly CheckBox _viewTurn = TaggedCheckBox("ViewTurnEnabled");
     private readonly ComboBox _locomotionHand = ChoiceCombo();
     private readonly NumericUpDown _locomotionSpeed = Number(0.10m, 5.00m, 0.10m, 2);
+    private readonly CheckBox _worldDrag = TaggedCheckBox("WorldDragEnabled");
+    private readonly CheckBox _worldDragLeftGrip = TaggedCheckBox("WorldDragLeftGrip");
+    private readonly CheckBox _worldDragLeftTrigger = TaggedCheckBox("WorldDragLeftTrigger");
+    private readonly CheckBox _worldDragRightGrip = TaggedCheckBox("WorldDragRightGrip");
+    private readonly CheckBox _worldDragRightTrigger = TaggedCheckBox("WorldDragRightTrigger");
+    private readonly CheckBox _worldDragTrackLeft = TaggedCheckBox("WorldDragTrackLeft");
+    private readonly CheckBox _worldDragTrackRight = TaggedCheckBox("WorldDragTrackRight");
+    private readonly Label _worldDragConflict = new()
+    {
+        Tag = "WorldDragPanelConflict",
+        AutoSize = true,
+        ForeColor = Color.DarkOrange,
+        MaximumSize = new Size(560, 0)
+    };
     private readonly ComboBox _viewTurnMode = ChoiceCombo();
     private readonly NumericUpDown _viewTurnSpeed = Number(15m, 180m, 5m, 0);
     private readonly ComboBox _viewSnapAngle = ChoiceCombo();
@@ -154,6 +169,12 @@ internal sealed class MainForm : Form
         _gameRoot.Text = SettingsStore.FindInitialGameRoot();
         _eyeScale.ValueChanged += (_, _) => UpdateEyeScaleWarning();
         _locomotion.CheckedChanged += (_, _) => UpdateLocomotionControls();
+        _viewTurn.CheckedChanged += (_, _) => UpdateLocomotionControls();
+        _worldDrag.CheckedChanged += (_, _) => UpdateLocomotionControls();
+        _worldDragLeftGrip.CheckedChanged += (_, _) => UpdateLocomotionControls();
+        _worldDragRightGrip.CheckedChanged += (_, _) => UpdateLocomotionControls();
+        _panelHand.SelectedIndexChanged += (_, _) => UpdateLocomotionControls();
+        _toggle.SelectedIndexChanged += (_, _) => UpdateLocomotionControls();
         _viewTurnMode.SelectedIndexChanged += (_, _) => UpdateLocomotionControls();
         _liveEyeAuto.CheckedChanged += (_, _) => UpdateSpatialControls();
         _liveHeadAuto.CheckedChanged += (_, _) => UpdateSpatialControls();
@@ -308,6 +329,17 @@ internal sealed class MainForm : Form
         AddRow(grid, "Locomotion", _locomotion);
         AddRow(grid, "LocomotionHand", _locomotionHand);
         AddRow(grid, "LocomotionSpeed", _locomotionSpeed);
+        AddRow(grid, "WorldDrag", _worldDrag);
+        AddRow(grid, "WorldDragActivation", Flow(
+            _worldDragLeftGrip,
+            _worldDragLeftTrigger,
+            _worldDragRightGrip,
+            _worldDragRightTrigger));
+        AddRow(grid, "WorldDragTracking", Flow(
+            _worldDragTrackLeft,
+            _worldDragTrackRight));
+        AddRow(grid, "WorldDragNotice", _worldDragConflict);
+        AddRow(grid, "ViewTurn", _viewTurn);
         AddRow(grid, "ViewTurnMode", _viewTurnMode);
         AddRow(grid, "ViewTurnSpeed", _viewTurnSpeed);
         AddRow(grid, "ViewSnapAngle", _viewSnapAngle);
@@ -527,6 +559,17 @@ internal sealed class MainForm : Form
             LocomotionEnabled = _locomotion.Checked,
             LocomotionHand = Selected(_locomotionHand, VrHand.Right),
             LocomotionSpeed = (float)_locomotionSpeed.Value,
+            ViewTurnEnabled = _viewTurn.Checked,
+            WorldDrag = new VrWorldDragSettings
+            {
+                Enabled = _worldDrag.Checked,
+                LeftGripActivation = _worldDragLeftGrip.Checked,
+                LeftTriggerActivation = _worldDragLeftTrigger.Checked,
+                RightGripActivation = _worldDragRightGrip.Checked,
+                RightTriggerActivation = _worldDragRightTrigger.Checked,
+                TrackLeftHand = _worldDragTrackLeft.Checked,
+                TrackRightHand = _worldDragTrackRight.Checked
+            },
             ViewTurnMode = Selected(_viewTurnMode, VrViewTurnMode.Snap),
             ViewTurnSpeed = (float)_viewTurnSpeed.Value,
             ViewSnapAngleDegrees = Selected(_viewSnapAngle, 30)
@@ -580,6 +623,15 @@ internal sealed class MainForm : Form
         _locomotion.Checked = settings.Tracking.LocomotionEnabled;
         Select(_locomotionHand, settings.Tracking.LocomotionHand);
         Set(_locomotionSpeed, settings.Tracking.LocomotionSpeed);
+        _viewTurn.Checked = settings.Tracking.ViewTurnEnabled.GetValueOrDefault(
+            settings.Tracking.LocomotionEnabled);
+        _worldDrag.Checked = settings.Tracking.WorldDrag.Enabled;
+        _worldDragLeftGrip.Checked = settings.Tracking.WorldDrag.LeftGripActivation;
+        _worldDragLeftTrigger.Checked = settings.Tracking.WorldDrag.LeftTriggerActivation;
+        _worldDragRightGrip.Checked = settings.Tracking.WorldDrag.RightGripActivation;
+        _worldDragRightTrigger.Checked = settings.Tracking.WorldDrag.RightTriggerActivation;
+        _worldDragTrackLeft.Checked = settings.Tracking.WorldDrag.TrackLeftHand;
+        _worldDragTrackRight.Checked = settings.Tracking.WorldDrag.TrackRightHand;
         Select(_viewTurnMode, settings.Tracking.ViewTurnMode);
         Set(_viewTurnSpeed, settings.Tracking.ViewTurnSpeed);
         Select(_viewSnapAngle, settings.Tracking.ViewSnapAngleDegrees);
@@ -639,13 +691,30 @@ internal sealed class MainForm : Form
 
     private void UpdateLocomotionControls()
     {
-        _locomotionHand.Enabled = _locomotion.Checked;
+        _locomotionHand.Enabled = _locomotion.Checked || _viewTurn.Checked;
         _locomotionSpeed.Enabled = _locomotion.Checked;
-        _viewTurnMode.Enabled = _locomotion.Checked;
+        _viewTurnMode.Enabled = _viewTurn.Checked;
         bool smooth = Selected(_viewTurnMode, VrViewTurnMode.Snap) ==
             VrViewTurnMode.Smooth;
-        _viewTurnSpeed.Enabled = _locomotion.Checked && smooth;
-        _viewSnapAngle.Enabled = _locomotion.Checked && !smooth;
+        _viewTurnSpeed.Enabled = _viewTurn.Checked && smooth;
+        _viewSnapAngle.Enabled = _viewTurn.Checked && !smooth;
+        foreach (Control control in new Control[]
+        {
+            _worldDragLeftGrip,
+            _worldDragLeftTrigger,
+            _worldDragRightGrip,
+            _worldDragRightTrigger,
+            _worldDragTrackLeft,
+            _worldDragTrackRight
+        })
+        {
+            control.Enabled = _worldDrag.Checked;
+        }
+        bool panelGripConflict = _worldDrag.Checked &&
+            Selected(_toggle, PanelToggleBinding.Grip) == PanelToggleBinding.Grip &&
+            ((Selected(_panelHand, VrHand.Left) == VrHand.Left && _worldDragLeftGrip.Checked) ||
+             (Selected(_panelHand, VrHand.Left) == VrHand.Right && _worldDragRightGrip.Checked));
+        _worldDragConflict.Visible = panelGripConflict;
     }
 
     private void UpdateSpatialControls()
@@ -732,6 +801,19 @@ internal sealed class MainForm : Form
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
         return grid;
+    }
+
+    private static FlowLayoutPanel Flow(params Control[] controls)
+    {
+        FlowLayoutPanel panel = new()
+        {
+            AutoSize = true,
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = true
+        };
+        panel.Controls.AddRange(controls);
+        return panel;
     }
 
     private static void AddRow(TableLayoutPanel grid, string labelKey, Control control)

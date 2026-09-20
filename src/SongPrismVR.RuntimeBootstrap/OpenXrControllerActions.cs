@@ -25,6 +25,14 @@ internal readonly record struct OpenXrControllerFrame(
     bool PointerBackPressed,
     float PointerThumbstickX,
     float PointerThumbstickY,
+    bool LeftGripPoseTracked,
+    OpenXrControllerPose LeftGripPose,
+    bool RightGripPoseTracked,
+    OpenXrControllerPose RightGripPose,
+    float LeftGripValue,
+    float LeftTriggerValue,
+    float RightGripValue,
+    float RightTriggerValue,
     bool LocomotionThumbstickActive,
     float LocomotionThumbstickX,
     float LocomotionThumbstickY,
@@ -339,7 +347,7 @@ internal sealed class OpenXrControllerActions : IDisposable
             rightAimSpace = IntPtr.Zero;
             Log(
                 "openxr-controller-actions-ready",
-                $"Quest Touch actions are attached;panelHand={settings.Panel.PanelHand};pointerHand={settings.Panel.PointerHand};toggle={settings.Panel.ToggleBinding};startEnabled={settings.Panel.StartEnabled};locomotionHand={settings.Tracking.LocomotionHand};viewTurnHand={OppositeHand(settings.Tracking.LocomotionHand)};viewTurnMode={settings.Tracking.ViewTurnMode};viewSnapAngle={settings.Tracking.ViewSnapAngleDegrees}.");
+                $"Quest Touch actions are attached;panelHand={settings.Panel.PanelHand};pointerHand={settings.Panel.PointerHand};toggle={settings.Panel.ToggleBinding};startEnabled={settings.Panel.StartEnabled};locomotionHand={settings.Tracking.LocomotionHand};viewTurnEnabled={settings.Tracking.ViewTurnEnabled};viewTurnHand={OppositeHand(settings.Tracking.LocomotionHand)};viewTurnMode={settings.Tracking.ViewTurnMode};viewSnapAngle={settings.Tracking.ViewSnapAngleDegrees};worldDrag={settings.Tracking.WorldDrag.Enabled}.");
             return result;
         }
         catch (Exception exception)
@@ -379,7 +387,10 @@ internal sealed class OpenXrControllerActions : IDisposable
         }
     }
 
-    public OpenXrControllerFrame Update(long predictedDisplayTime, IntPtr baseSpace)
+    public OpenXrControllerFrame Update(
+        long predictedDisplayTime,
+        IntPtr panelBaseSpace,
+        IntPtr worldBaseSpace)
     {
         XrActionsSyncInfo syncInfo = new()
         {
@@ -394,37 +405,42 @@ internal sealed class OpenXrControllerActions : IDisposable
         }
         if (syncResult == XrSessionNotFocused)
         {
-            return new OpenXrControllerFrame(
-                PanelEnabled,
-                false,
-                default,
-                false,
-                default,
-                0f,
-                false,
-                false,
-                0f,
-                0f,
-                false,
-                0f,
-                0f,
-                false,
-                0f,
-                0f);
+            return default;
         }
 
         ulong panelHandPath = PathForHand(_panelSettings.PanelHand);
         ulong pointerHandPath = PathForHand(_panelSettings.PointerHand);
+        TryGetFloat(
+            _squeezeValueAction,
+            _leftHandPath,
+            "left squeeze",
+            ref _nextSqueezeReadFailureLogTimestamp,
+            out XrActionStateFloat leftGrip);
+        TryGetFloat(
+            _squeezeValueAction,
+            _rightHandPath,
+            "right squeeze",
+            ref _nextSqueezeReadFailureLogTimestamp,
+            out XrActionStateFloat rightGrip);
+        TryGetFloat(
+            _triggerValueAction,
+            _leftHandPath,
+            "left trigger",
+            ref _nextTriggerReadFailureLogTimestamp,
+            out XrActionStateFloat leftTrigger);
+        TryGetFloat(
+            _triggerValueAction,
+            _rightHandPath,
+            "right trigger",
+            ref _nextTriggerReadFailureLogTimestamp,
+            out XrActionStateFloat rightTrigger);
         bool toggleActive;
         float toggleValue;
         if (_panelSettings.ToggleBinding == PanelToggleBinding.Grip)
         {
-            TryGetFloat(
-                _squeezeValueAction,
-                panelHandPath,
-                $"{HandName(_panelSettings.PanelHand)} squeeze",
-                ref _nextSqueezeReadFailureLogTimestamp,
-                out XrActionStateFloat toggleGrip);
+            XrActionStateFloat toggleGrip = _panelSettings.PanelHand == VrHand.Left
+                ? leftGrip
+                : rightGrip;
             toggleActive = toggleGrip.IsActive != 0;
             toggleValue = toggleGrip.CurrentState;
         }
@@ -456,22 +472,19 @@ internal sealed class OpenXrControllerActions : IDisposable
             _gripPoseAction,
             panelHandPath,
             GripSpaceForHand(_panelSettings.PanelHand),
-            baseSpace,
+            panelBaseSpace,
             predictedDisplayTime,
             out OpenXrControllerPose panelPose);
         bool pointerAimTracked = TryLocatePose(
             _aimPoseAction,
             pointerHandPath,
             AimSpaceForHand(_panelSettings.PointerHand),
-            baseSpace,
+            panelBaseSpace,
             predictedDisplayTime,
             out OpenXrControllerPose pointerAimPose);
-        TryGetFloat(
-            _triggerValueAction,
-            pointerHandPath,
-            $"{HandName(_panelSettings.PointerHand)} trigger",
-            ref _nextTriggerReadFailureLogTimestamp,
-            out XrActionStateFloat pointerTrigger);
+        XrActionStateFloat pointerTrigger = _panelSettings.PointerHand == VrHand.Left
+            ? leftTrigger
+            : rightTrigger;
         TryGetBoolean(
             _primaryClickAction,
             pointerHandPath,
@@ -500,8 +513,23 @@ internal sealed class OpenXrControllerActions : IDisposable
             out XrActionStateVector2f viewTurnThumbstick);
         bool locomotionActive = _trackingSettings.LocomotionEnabled &&
             locomotionThumbstick.IsActive != 0;
-        bool viewTurnActive = _trackingSettings.LocomotionEnabled &&
+        bool viewTurnActive = _trackingSettings.ViewTurnEnabled.GetValueOrDefault(
+                _trackingSettings.LocomotionEnabled) &&
             viewTurnThumbstick.IsActive != 0;
+        bool leftGripPoseTracked = TryLocatePose(
+            _gripPoseAction,
+            _leftHandPath,
+            LeftGripSpace,
+            worldBaseSpace,
+            predictedDisplayTime,
+            out OpenXrControllerPose leftGripPose);
+        bool rightGripPoseTracked = TryLocatePose(
+            _gripPoseAction,
+            _rightHandPath,
+            RightGripSpace,
+            worldBaseSpace,
+            predictedDisplayTime,
+            out OpenXrControllerPose rightGripPose);
         bool rawPrimary = pointerPrimary.IsActive != 0 && pointerPrimary.CurrentState != 0;
         bool rawSecondary = pointerSecondary.IsActive != 0 && pointerSecondary.CurrentState != 0;
         bool pointerClick = _inputSettings.PrimaryClickButton == FaceButtonBinding.Primary
@@ -521,6 +549,14 @@ internal sealed class OpenXrControllerActions : IDisposable
             pointerBack,
             0f,
             0f,
+            leftGripPoseTracked,
+            leftGripPose,
+            rightGripPoseTracked,
+            rightGripPose,
+            leftGrip.IsActive != 0 ? leftGrip.CurrentState : 0f,
+            leftTrigger.IsActive != 0 ? leftTrigger.CurrentState : 0f,
+            rightGrip.IsActive != 0 ? rightGrip.CurrentState : 0f,
+            rightTrigger.IsActive != 0 ? rightTrigger.CurrentState : 0f,
             locomotionActive,
             locomotionActive ? locomotionThumbstick.CurrentState.X : 0f,
             locomotionActive ? locomotionThumbstick.CurrentState.Y : 0f,
@@ -578,6 +614,10 @@ internal sealed class OpenXrControllerActions : IDisposable
         out OpenXrControllerPose pose)
     {
         pose = default;
+        if (baseSpace == IntPtr.Zero)
+        {
+            return false;
+        }
         XrActionStateGetInfo getInfo = new()
         {
             Type = XrTypeActionStateGetInfo,

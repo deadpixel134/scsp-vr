@@ -12,15 +12,15 @@
 
 ## 현재 릴리스
 
-현재 공개 빌드는 [`v0.1.1-preview.1`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.1-preview.1) 프리릴리스입니다. Windows x64, DMM PC판, OpenXR 런타임을 대상으로 합니다.
+현재 공개 빌드는 [`v0.1.2`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.2)입니다. Windows x64, DMM PC판, OpenXR 런타임을 대상으로 합니다.
 
-프리릴리스는 실제 게임과 HMD에서 계속 검증 중입니다. 게임 업데이트나 OpenXR 런타임에 따라 동작이 달라질 수 있으므로 설치 전에 릴리스 노트를 확인해 주세요.
+게임 업데이트나 OpenXR 런타임에 따라 동작이 달라질 수 있으므로 설치 전에 릴리스 노트를 확인해 주세요.
 
 ## 주요 기능
 
 - 게임 카메라를 OpenXR 스테레오 뷰로 렌더링
 - 세로/가로 화면과 라이브 장면에 맞춘 VR 표시 처리
-- OpenXR 컨트롤러 포인터 및 VR 이동/시점 설정
+- OpenXR 컨트롤러 포인터, 썸스틱 이동, 손으로 월드를 잡아 끄는 이동 및 독립 시점 회전 설정
 - 한국어·영어·일본어 설정 앱과 설치 프로그램
 - 기존 `scsp-localify` 한글 패치의 `version.dll`, 설정, 번역 데이터를 보존하는 공존 설치
 - 한글 패치가 없는 깨끗한 게임 폴더에도 필요한 로더 구성 설치
@@ -44,7 +44,8 @@
 ## 알려진 제한사항
 
 - DMM PC판 전용이며 Steam/모바일판을 지원하지 않습니다.
-- 프리릴리스 단계이므로 모든 HMD, OpenXR 런타임, 그래픽 설정 조합을 보장하지 않습니다.
+- 모든 HMD, OpenXR 런타임, 그래픽 설정 조합을 보장하지 않습니다.
+- **`scsp-localify`의 Free Camera 옵션과 동시에 사용할 수 없습니다.** 게임 실행 전에 `scsp-config.json`의 `baseFreeCamera.enable`을 `false`로 설정해야 합니다. SCSP VR은 이 값을 자동으로 변경하거나 복구하지 않습니다.
 - 게임 업데이트 후에는 호환성 확인 전까지 모드를 제거하거나 새 릴리스를 기다리는 편이 안전합니다.
 - VR 런타임 초기화에 실패하면 게임을 계속 실행하도록 설계했지만, 프리릴리스의 모든 실패 경로가 실기기에서 승인된 것은 아닙니다.
 - 게임 파일, 게임 에셋, `scsp-localify` 번역 데이터는 저장소나 릴리스에 포함하지 않습니다.
@@ -63,7 +64,7 @@ dotnet run --project tests/SongPrismVR.Management.Tests/SongPrismVR.Management.T
 dotnet run --project tests/SongPrismVR.Core.Tests/SongPrismVR.Core.Tests.csproj -c Release
 ```
 
-배포 빌드는 지원되는 게임 작업공간에서 `scripts/Build-DistributionPackage.ps1`을 사용합니다. 게임 및 제3자 바이너리는 저장소에 커밋하지 않습니다.
+배포 빌드는 지원되는 게임 작업공간을 지정해 `scripts/Build-DistributionPackage.ps1 -GameRoot <게임 폴더>`를 사용합니다. 게임 및 제3자 바이너리는 저장소에 커밋하지 않습니다.
 
 ## 라이선스와 크레딧
 

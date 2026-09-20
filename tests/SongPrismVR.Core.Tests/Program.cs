@@ -21,6 +21,9 @@ var tests = new (string Name, Action Run)[]
     ("Stereo startup reset requires a fresh generation", StereoStartupResetRequiresFreshGeneration),
     ("Stereo source render gate waits for a later frame and claims once", StereoSourceRenderGateWaitsForLaterFrame),
     ("Stereo source render gate rearms when the source changes", StereoSourceRenderGateRearmsForSourceChange),
+    ("Live stereo retains an approved source in the same live scene", LiveStereoRetainsApprovedSource),
+    ("Live stereo retention rejects unsafe continuity", LiveStereoRetentionRejectsUnsafeContinuity),
+    ("Live stereo rediscovery distinguishes resume from replacement", LiveStereoRediscoveryDistinguishesReplacement),
     ("Black stereo frames retry before timeout", BlackStereoFramesRetryBeforeTimeout),
     ("Black stereo frame policy resets per generation", BlackStereoFramePolicyResetsPerGeneration),
     ("6DoF origin preserves configured eye separation", SixDofOriginPreservesEyeSeparation),
@@ -34,6 +37,14 @@ var tests = new (string Name, Action Run)[]
     ("Locomotion follows upward and downward view pitch", LocomotionFollowsViewPitch),
     ("Locomotion applies radial deadzone and frame clamp", LocomotionAppliesDeadzoneAndFrameClamp),
     ("Locomotion reset clears the scene offset", LocomotionResetClearsSceneOffset),
+    ("World drag follows the grabbed hand", WorldDragFollowsGrabbedHand),
+    ("World drag composes with thumbstick and navigation rotation", WorldDragComposesWithNavigation),
+    ("World drag supports every activation input", WorldDragSupportsEveryActivationInput),
+    ("World drag supports cross-hand activation", WorldDragSupportsCrossHandActivation),
+    ("World drag first press owns the session", WorldDragFirstPressOwnsSession),
+    ("World drag arms across the press threshold", WorldDragArmsAcrossPressThreshold),
+    ("World drag consumed input requires release", WorldDragConsumedInputRequiresRelease),
+    ("World drag pose loss prevents a jump", WorldDragPoseLossPreventsJump),
     ("View turn changes movement direction", ViewTurnChangesMovementDirection),
     ("View turn keeps world yaw and pitch cardinal", ViewTurnKeepsWorldAxesCardinal),
     ("World view composition removes scene camera roll", WorldViewCompositionRemovesSceneRoll),
@@ -45,6 +56,8 @@ var tests = new (string Name, Action Run)[]
     ("VR settings reject unsupported VFX modes", VrSettingsRejectUnsupportedVfxModes),
     ("VR settings repair legacy manual VFX mode", VrSettingsRepairLegacyManualVfxMode),
     ("VR settings load swapped movement hand", VrSettingsLoadSwappedMovementHand),
+    ("VR settings migrate the combined navigation toggle", VrSettingsMigrateCombinedNavigationToggle),
+    ("VR settings reject incomplete world drag", VrSettingsRejectIncompleteWorldDrag),
     ("VR settings repair invalid roles and ranges", VrSettingsRepairInvalidValues),
     ("VR settings reject unsupported schema", VrSettingsRejectUnsupportedSchema),
     ("Spatial defaults preserve baseline", SpatialDefaultsPreserveBaseline),
@@ -442,6 +455,175 @@ static void LocomotionResetClearsSceneOffset()
     Near(0f, locomotion.Offset.Z);
 }
 
+static void WorldDragFollowsGrabbedHand()
+{
+    var locomotion = new VrLocomotionIntegrator();
+    True(locomotion.ApplyWorldDrag(
+        new TrackingVector3(0.25f, -0.10f, -0.40f),
+        new TrackingQuaternion(0f, 0f, 0f, 1f),
+        2f));
+    Near(-0.50f, locomotion.Offset.X);
+    Near(0.20f, locomotion.Offset.Y);
+    Near(-0.80f, locomotion.Offset.Z);
+}
+
+static void WorldDragComposesWithNavigation()
+{
+    var locomotion = new VrLocomotionIntegrator();
+    TrackingQuaternion identity = new(0f, 0f, 0f, 1f);
+    True(locomotion.Update(1f, 0f, identity, 0.10f, 1f));
+    Near(0.10f, locomotion.Offset.X);
+    True(locomotion.ApplyWorldDrag(
+        new TrackingVector3(0.10f, 0f, 0f),
+        identity,
+        1f));
+    Near(0f, locomotion.Offset.X);
+
+    locomotion.Reset();
+    True(locomotion.ApplyWorldDrag(
+        new TrackingVector3(0.20f, 0f, 0f),
+        AxisAngle(0f, 1f, 0f, 90f),
+        1f));
+    Near(0f, locomotion.Offset.X);
+    Near(0.20f, locomotion.Offset.Z);
+}
+
+static void WorldDragSupportsEveryActivationInput()
+{
+    foreach (VrWorldDragActivation activation in Enum.GetValues<VrWorldDragActivation>())
+    {
+        VrWorldDragSettings settings = new()
+        {
+            Enabled = true,
+            LeftGripActivation = activation == VrWorldDragActivation.LeftGrip,
+            LeftTriggerActivation = activation == VrWorldDragActivation.LeftTrigger,
+            RightGripActivation = activation == VrWorldDragActivation.RightGrip,
+            RightTriggerActivation = activation == VrWorldDragActivation.RightTrigger,
+            TrackLeftHand = true,
+            TrackRightHand = true
+        };
+        var drag = new VrWorldDragState();
+        VrWorldDragFrame frame = activation switch
+        {
+            VrWorldDragActivation.LeftGrip => DragFrame(leftGrip: 1f),
+            VrWorldDragActivation.LeftTrigger => DragFrame(leftTrigger: 1f),
+            VrWorldDragActivation.RightGrip => DragFrame(rightGrip: 1f),
+            VrWorldDragActivation.RightTrigger => DragFrame(rightTrigger: 1f),
+            _ => throw new InvalidOperationException()
+        };
+        True(drag.Update(settings, frame, out _));
+        Equal(activation, drag.Owner!.Value);
+    }
+}
+
+static void WorldDragSupportsCrossHandActivation()
+{
+    VrWorldDragSettings settings = new()
+    {
+        Enabled = true,
+        LeftGripActivation = true,
+        RightGripActivation = false,
+        TrackLeftHand = false,
+        TrackRightHand = true
+    };
+    var drag = new VrWorldDragState();
+    True(drag.Update(settings, DragFrame(leftGrip: 1f, rightX: 1f), out TrackingVector3 first));
+    Near(0f, first.X);
+    Equal(VrHand.Right, drag.TrackingHand);
+    True(drag.Update(settings, DragFrame(leftGrip: 1f, rightX: 1.3f), out TrackingVector3 second));
+    Near(0.3f, second.X);
+}
+
+static void WorldDragFirstPressOwnsSession()
+{
+    VrWorldDragSettings settings = new()
+    {
+        Enabled = true,
+        LeftGripActivation = true,
+        RightGripActivation = true,
+        TrackLeftHand = true,
+        TrackRightHand = true
+    };
+    var drag = new VrWorldDragState();
+    True(drag.Update(settings, DragFrame(leftGrip: 1f), out _));
+    Equal(VrWorldDragActivation.LeftGrip, drag.Owner!.Value);
+    True(drag.Update(settings, DragFrame(leftGrip: 1f, rightGrip: 1f, leftX: 0.2f, rightX: 1f), out TrackingVector3 delta));
+    Equal(VrWorldDragActivation.LeftGrip, drag.Owner!.Value);
+    Near(0.2f, delta.X);
+}
+
+static void WorldDragArmsAcrossPressThreshold()
+{
+    VrWorldDragSettings settings = new()
+    {
+        Enabled = true,
+        RightGripActivation = true,
+        TrackRightHand = true
+    };
+    var drag = new VrWorldDragState();
+    False(drag.Update(settings, DragFrame(rightGrip: 0.5f), out _));
+    True(drag.Update(settings, DragFrame(rightGrip: 0.8f), out _));
+}
+
+static void WorldDragConsumedInputRequiresRelease()
+{
+    VrWorldDragSettings settings = new()
+    {
+        Enabled = true,
+        RightGripActivation = false,
+        RightTriggerActivation = true,
+        TrackRightHand = true
+    };
+    var drag = new VrWorldDragState();
+    False(drag.Update(settings, DragFrame(rightTrigger: 1f, rightTriggerConsumed: true), out _));
+    False(drag.Update(settings, DragFrame(rightTrigger: 1f), out _));
+    False(drag.Update(settings, DragFrame(), out _));
+    True(drag.Update(settings, DragFrame(rightTrigger: 1f), out _));
+}
+
+static void WorldDragPoseLossPreventsJump()
+{
+    VrWorldDragSettings settings = new()
+    {
+        Enabled = true,
+        RightGripActivation = true,
+        TrackRightHand = true
+    };
+    var drag = new VrWorldDragState();
+    True(drag.Update(settings, DragFrame(rightGrip: 1f), out _));
+    False(drag.Update(settings, DragFrame(rightGrip: 1f, rightTracked: false), out _));
+    False(drag.Update(settings, DragFrame(rightGrip: 1f, rightX: 10f), out _));
+    False(drag.Update(settings, DragFrame(rightX: 10f), out _));
+    True(drag.Update(settings, DragFrame(rightGrip: 1f, rightX: 10f), out TrackingVector3 baseline));
+    Near(0f, baseline.X);
+}
+
+static VrWorldDragFrame DragFrame(
+    float leftGrip = 0f,
+    float leftTrigger = 0f,
+    float rightGrip = 0f,
+    float rightTrigger = 0f,
+    bool leftGripConsumed = false,
+    bool leftTriggerConsumed = false,
+    bool rightGripConsumed = false,
+    bool rightTriggerConsumed = false,
+    bool leftTracked = true,
+    float leftX = 0f,
+    bool rightTracked = true,
+    float rightX = 0f) => new(
+        leftGrip,
+        leftTrigger,
+        rightGrip,
+        rightTrigger,
+        leftGripConsumed,
+        leftTriggerConsumed,
+        rightGripConsumed,
+        rightTriggerConsumed,
+        leftTracked,
+        new TrackingVector3(leftX, 0f, 0f),
+        rightTracked,
+        new TrackingVector3(rightX, 0f, 0f));
+
 static void ViewTurnChangesMovementDirection()
 {
     var turn = new VrViewTurnIntegrator();
@@ -660,6 +842,10 @@ static void VrSettingsPreserveProductDefaults()
     Equal(true, result.Settings.Tracking.LocomotionEnabled);
     Equal(VrHand.Right, result.Settings.Tracking.LocomotionHand);
     Equal(1.95f, result.Settings.Tracking.LocomotionSpeed);
+    Equal(true, result.Settings.Tracking.ViewTurnEnabled!.Value);
+    Equal(false, result.Settings.Tracking.WorldDrag.Enabled);
+    Equal(true, result.Settings.Tracking.WorldDrag.RightGripActivation);
+    Equal(true, result.Settings.Tracking.WorldDrag.TrackRightHand);
     Equal(VrViewTurnMode.Snap, result.Settings.Tracking.ViewTurnMode);
     Equal(90f, result.Settings.Tracking.ViewTurnSpeed);
     Equal(30, result.Settings.Tracking.ViewSnapAngleDegrees);
@@ -693,6 +879,46 @@ static void StereoSourceRenderGateRearmsForSourceChange()
     True(gate.TryClaim(frameCount: 12));
     gate.Reset();
     False(gate.TryClaim(frameCount: 13));
+}
+
+static void LiveStereoRetainsApprovedSource()
+{
+    Equal(true, LiveStereoSourceRetentionPolicy.ShouldRetain(
+        isConcreteLiveScene: true,
+        isSameLiveScene: true,
+        hasApprovedEstablishedSource: true,
+        sourceObjectAlive: true));
+}
+
+static void LiveStereoRetentionRejectsUnsafeContinuity()
+{
+    Equal(false, LiveStereoSourceRetentionPolicy.ShouldRetain(
+        isConcreteLiveScene: false,
+        isSameLiveScene: true,
+        hasApprovedEstablishedSource: true,
+        sourceObjectAlive: true));
+    Equal(false, LiveStereoSourceRetentionPolicy.ShouldRetain(
+        isConcreteLiveScene: true,
+        isSameLiveScene: false,
+        hasApprovedEstablishedSource: true,
+        sourceObjectAlive: true));
+    Equal(false, LiveStereoSourceRetentionPolicy.ShouldRetain(
+        isConcreteLiveScene: true,
+        isSameLiveScene: true,
+        hasApprovedEstablishedSource: false,
+        sourceObjectAlive: true));
+    Equal(false, LiveStereoSourceRetentionPolicy.ShouldRetain(
+        isConcreteLiveScene: true,
+        isSameLiveScene: true,
+        hasApprovedEstablishedSource: true,
+        sourceObjectAlive: false));
+}
+
+static void LiveStereoRediscoveryDistinguishesReplacement()
+{
+    Equal(true, LiveStereoSourceRetentionPolicy.IsSameSource(101, 101));
+    Equal(false, LiveStereoSourceRetentionPolicy.IsSameSource(101, 202));
+    Equal(false, LiveStereoSourceRetentionPolicy.IsSameSource(0, 0));
 }
 
 static void SpatialHeadTranslationSharesEyeWorldScale()
@@ -882,6 +1108,39 @@ static void VrSettingsLoadSwappedMovementHand()
     Equal(VrViewTurnMode.Smooth, result.Settings.Tracking.ViewTurnMode);
     Equal(120f, result.Settings.Tracking.ViewTurnSpeed);
     Equal(45, result.Settings.Tracking.ViewSnapAngleDegrees);
+}
+
+static void VrSettingsMigrateCombinedNavigationToggle()
+{
+    VrSettings settings = new();
+    settings.Tracking.LocomotionEnabled = false;
+    settings.Tracking.ViewTurnEnabled = null;
+
+    VrSettingsValidationResult result = VrSettingsValidator.Validate(settings);
+
+    False(result.UsedFallback);
+    Equal(false, result.Settings.Tracking.LocomotionEnabled);
+    Equal(false, result.Settings.Tracking.ViewTurnEnabled!.Value);
+    Equal(false, result.Settings.Tracking.WorldDrag.Enabled);
+    Equal(true, result.Settings.Tracking.WorldDrag.RightGripActivation);
+    Equal(true, result.Settings.Tracking.WorldDrag.TrackRightHand);
+}
+
+static void VrSettingsRejectIncompleteWorldDrag()
+{
+    VrSettings settings = VrSettings.CreateApprovedDefaults();
+    settings.Tracking.WorldDrag.Enabled = true;
+    settings.Tracking.WorldDrag.LeftGripActivation = false;
+    settings.Tracking.WorldDrag.RightGripActivation = false;
+    settings.Tracking.WorldDrag.TrackLeftHand = false;
+    settings.Tracking.WorldDrag.TrackRightHand = false;
+
+    VrSettingsValidationResult result = VrSettingsValidator.Validate(settings);
+
+    True(result.UsedFallback);
+    False(result.Settings.Tracking.WorldDrag.Enabled);
+    True(result.Issues.Contains("tracking.worldDrag.activation:none-selected"));
+    True(result.Issues.Contains("tracking.worldDrag.trackedHand:none-selected"));
 }
 
 static void VrSettingsRepairInvalidValues()

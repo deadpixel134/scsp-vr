@@ -23,6 +23,16 @@
     "locomotionEnabled": true,
     "locomotionHand": "right",
     "locomotionSpeed": 1.95,
+    "viewTurnEnabled": true,
+    "worldDrag": {
+      "enabled": false,
+      "leftGripActivation": false,
+      "leftTriggerActivation": false,
+      "rightGripActivation": true,
+      "rightTriggerActivation": false,
+      "trackLeftHand": false,
+      "trackRightHand": true
+    },
     "viewTurnMode": "snap",
     "viewTurnSpeed": 90,
     "viewSnapAngleDegrees": 30

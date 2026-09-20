@@ -12,15 +12,15 @@ An unofficial OpenXR VR mod for the DMM PC version of **THE iDOLM@STER Shiny Col
 
 ## Current release
 
-The current public build is the [`v0.1.1-preview.1`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.1-preview.1) prerelease. It targets Windows x64, the DMM PC version, and an OpenXR runtime.
+The current public build is [`v0.1.2`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.2). It targets Windows x64, the DMM PC version, and an OpenXR runtime.
 
-This prerelease is still being validated in the real game and on HMDs. Behavior may change with game or OpenXR runtime updates, so read the release notes before installing.
+Behavior may change with game or OpenXR runtime updates, so read the release notes before installing.
 
 ## Highlights
 
 - Renders the game camera as OpenXR stereo views
 - VR presentation handling for portrait, landscape, and live scenes
-- OpenXR controller pointer plus VR movement/view settings
+- OpenXR controller pointer, thumbstick locomotion, grab-and-drag world locomotion, and independent view-turn settings
 - Korean, English, and Japanese configurator and installer
 - Coexists with `scsp-localify` while preserving its `version.dll`, settings, and translation data
 - Also installs on a clean game folder without the Korean patch
@@ -44,7 +44,8 @@ Use **Uninstall** in the installer. Pre-install files are retained for rollback,
 ## Important limitations
 
 - DMM PC only; Steam and mobile versions are not supported.
-- As a prerelease, it cannot guarantee every HMD, OpenXR runtime, or graphics-settings combination.
+- Not every HMD, OpenXR runtime, or graphics-settings combination is guaranteed.
+- **The `scsp-localify` Free Camera option is incompatible with VR rendering.** Before starting the game, set `baseFreeCamera.enable` to `false` in `scsp-config.json`. SCSP VR does not change or restore this value automatically.
 - After a game update, uninstall the mod or wait for compatibility confirmation before launching.
 - Runtime initialization is designed to fail open, but not every failure path has completed real-device acceptance yet.
 - No game binaries, game assets, or `scsp-localify` translation data are included in this repository or its releases.
@@ -63,7 +64,7 @@ Run core policy tests:
 dotnet run --project tests/SongPrismVR.Core.Tests/SongPrismVR.Core.Tests.csproj -c Release
 ```
 
-Distribution builds use `scripts/Build-DistributionPackage.ps1` inside a supported game workspace. Game and third-party binaries are never committed to this repository.
+For distribution builds, run `scripts/Build-DistributionPackage.ps1 -GameRoot <game folder>` against a supported game workspace. Game and third-party binaries are never committed to this repository.
 
 ## License and credits
 

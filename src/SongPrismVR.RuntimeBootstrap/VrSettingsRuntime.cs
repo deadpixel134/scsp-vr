@@ -58,6 +58,14 @@ internal static class VrSettingsRuntime
                     $"locomotion={_current.Tracking.LocomotionEnabled};" +
                     $"locomotionHand={_current.Tracking.LocomotionHand};" +
                     $"locomotionSpeed={_current.Tracking.LocomotionSpeed:R};" +
+                    $"viewTurn={_current.Tracking.ViewTurnEnabled};" +
+                    $"worldDrag={_current.Tracking.WorldDrag.Enabled};" +
+                    $"worldDragLeftGrip={_current.Tracking.WorldDrag.LeftGripActivation};" +
+                    $"worldDragLeftTrigger={_current.Tracking.WorldDrag.LeftTriggerActivation};" +
+                    $"worldDragRightGrip={_current.Tracking.WorldDrag.RightGripActivation};" +
+                    $"worldDragRightTrigger={_current.Tracking.WorldDrag.RightTriggerActivation};" +
+                    $"worldDragTrackLeft={_current.Tracking.WorldDrag.TrackLeftHand};" +
+                    $"worldDragTrackRight={_current.Tracking.WorldDrag.TrackRightHand};" +
                     $"viewTurnMode={_current.Tracking.ViewTurnMode};" +
                     $"viewTurnSpeed={_current.Tracking.ViewTurnSpeed:R};" +
                     $"viewSnapAngle={_current.Tracking.ViewSnapAngleDegrees};" +

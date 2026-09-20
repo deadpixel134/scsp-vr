@@ -48,6 +48,31 @@ public sealed class VrLocomotionIntegrator
         return true;
     }
 
+    public bool ApplyWorldDrag(
+        TrackingVector3 openXrDelta,
+        TrackingQuaternion navigationRotation,
+        float locomotionMultiplier)
+    {
+        if (!IsFinite(openXrDelta.X) || !IsFinite(openXrDelta.Y) ||
+            !IsFinite(openXrDelta.Z) ||
+            !IsFinite(locomotionMultiplier) || locomotionMultiplier < 0f ||
+            !TryNormalize(navigationRotation, out TrackingQuaternion rotation))
+        {
+            return false;
+        }
+
+        // OpenXR uses -Z as forward. Negating the converted hand delta moves
+        // the camera opposite the hand, making the world follow the grab.
+        TrackingVector3 cameraDelta = new(
+            -openXrDelta.X,
+            -openXrDelta.Y,
+            openXrDelta.Z);
+        Offset = Add(
+            Offset,
+            Scale(Rotate(rotation, cameraDelta), locomotionMultiplier));
+        return true;
+    }
+
     public void Reset() => Offset = default;
 
     private static TrackingVector3 Rotate(

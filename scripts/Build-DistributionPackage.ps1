@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$Version = '0.1.1',
+    [string]$Version = '0.1.2',
     [string]$OutputRoot,
+    [string]$GameRoot,
     [switch]$SkipBuild
 )
 
@@ -9,7 +10,11 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $vrmodRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$gameRoot = [System.IO.Path]::GetFullPath((Join-Path $vrmodRoot '..'))
+$gameRoot = if ([string]::IsNullOrWhiteSpace($GameRoot)) {
+    [System.IO.Path]::GetFullPath((Join-Path $vrmodRoot '..'))
+} else {
+    [System.IO.Path]::GetFullPath($GameRoot)
+}
 $buildRoot = Join-Path $vrmodRoot 'build'
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = Join-Path $vrmodRoot 'release'
@@ -39,7 +44,9 @@ function Copy-OwnedFile {
 }
 
 if (-not $SkipBuild) {
-    & (Join-Path $PSScriptRoot 'Build-VRMod.ps1')
+    & (Join-Path $PSScriptRoot 'Build-VRMod.ps1') `
+        -GameRoot $gameRoot `
+        -ProjectRoot $vrmodRoot
     Assert-LastExitCode 'Standard VR mod build failed.'
 }
 
