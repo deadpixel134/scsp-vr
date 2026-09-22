@@ -2108,6 +2108,18 @@ internal sealed class MainThreadSampler
         path.EndsWith("/Main Camera", StringComparison.Ordinal);
 
     private static bool HasPhotoStudioNonLiveUiStack(CameraUrpProbeData urp)
+        => HasUiAndOptionalBlurOverlayStack(urp);
+
+    private static bool IsOurStreamViewingScene(string scene) =>
+        scene.Equals(
+            "ourstreamliveviewing",
+            StringComparison.OrdinalIgnoreCase);
+
+    private static bool HasOurStreamNonLiveUiStack(CameraUrpProbeData urp)
+        => HasUiAndOptionalBlurOverlayStack(urp);
+
+    private static bool HasUiAndOptionalBlurOverlayStack(
+        CameraUrpProbeData urp)
     {
         IReadOnlyList<string> stack =
             urp.CameraStackNames ?? Array.Empty<string>();
@@ -2248,6 +2260,13 @@ internal sealed class MainThreadSampler
             IsDirectNonLiveTopologyStable();
         if (directCandidateStable)
         {
+            bool ourStreamCandidate = _directWorldCandidateKind.Equals(
+                "ourstream",
+                StringComparison.Ordinal);
+            bool ourStreamWasActive = _directNonLiveWorldEligible &&
+                _directNonLiveWorldKind.Equals(
+                    "ourstream",
+                    StringComparison.Ordinal);
             bool photoStudioCandidate = _directWorldCandidateKind.Equals(
                 "photo-studio",
                 StringComparison.Ordinal);
@@ -2306,6 +2325,13 @@ internal sealed class MainThreadSampler
                         : $"The photo-studio stereo source moved from {previousPhotoStudioScene} to {scene}; the new stable camera generation was accepted."
                 });
             }
+            if (ourStreamCandidate && !ourStreamWasActive)
+            {
+                AppendOurStreamStereoSourceEvent(
+                    "ourstream-stereo-source-approved",
+                    scene,
+                    "A stable OurStream LiveCamera and approved UI overlay stack were accepted for content-independent non-live 6DoF stereo.");
+            }
             return;
         }
 
@@ -2332,6 +2358,15 @@ internal sealed class MainThreadSampler
                     scene,
                     "A different photo-studio camera, background, or UI stack is stabilizing; the previous stereo generation was released before rebinding.");
             }
+            else if (_directNonLiveWorldKind.Equals(
+                         "ourstream",
+                         StringComparison.Ordinal))
+            {
+                AppendOurStreamStereoSourceEvent(
+                    "ourstream-stereo-source-released",
+                    scene,
+                    "The OurStream camera or UI stack changed; the previous stereo generation was released before rebinding.");
+            }
             _directNonLiveWorldEligible = false;
             _directNonLiveWorldKind = string.Empty;
             _directNonLiveWorldScene = string.Empty;
@@ -2357,6 +2392,16 @@ internal sealed class MainThreadSampler
                 AppendPhotoStudioStereoSourceReleased(
                     scene,
                     "The photo-studio scene or its approved camera/UI topology is no longer active; stereo returned to the safe panel path.");
+            }
+            else if (_directNonLiveWorldEligible &&
+                _directNonLiveWorldKind.Equals(
+                    "ourstream",
+                    StringComparison.Ordinal))
+            {
+                AppendOurStreamStereoSourceEvent(
+                    "ourstream-stereo-source-released",
+                    scene,
+                    "The OurStream viewing scene or its approved camera/UI topology is no longer active; stereo returned to the safe panel path.");
             }
             _m6NonLiveWorldSurfaceEligible = false;
             _directNonLiveWorldEligible = false;
@@ -2385,6 +2430,23 @@ internal sealed class MainThreadSampler
         {
             TimestampUtc = DateTimeOffset.UtcNow,
             Event = "photo-studio-stereo-source-released",
+            BootstrapVersion = RuntimeProbe.BootstrapVersion,
+            ProcessId = Environment.ProcessId,
+            Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
+            Scene = scene,
+            Reason = reason
+        });
+    }
+
+    private void AppendOurStreamStereoSourceEvent(
+        string eventName,
+        string scene,
+        string reason)
+    {
+        RuntimeProbe.Append(_logPath, new ProbeEvent
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            Event = eventName,
             BootstrapVersion = RuntimeProbe.BootstrapVersion,
             ProcessId = Environment.ProcessId,
             Architecture = RuntimeInformation.ProcessArchitecture.ToString(),
@@ -2750,6 +2812,14 @@ internal sealed class MainThreadSampler
                 cameraActive &&
                 targetTexture == IntPtr.Zero &&
                 HasPhotoStudioNonLiveUiStack(urp);
+            bool ourStreamCandidate =
+                IsOurStreamViewingScene(scene) &&
+                cameraName.Equals("LiveCamera", StringComparison.Ordinal) &&
+                cameraPath.Equals("LiveCamera", StringComparison.Ordinal) &&
+                cameraEnabled &&
+                cameraActive &&
+                targetTexture == IntPtr.Zero &&
+                HasOurStreamNonLiveUiStack(urp);
             bool storyCandidate =
                 !IsLiveScene(scene) &&
                 cameraName.Equals("MainCamera", StringComparison.Ordinal) &&
@@ -2759,7 +2829,8 @@ internal sealed class MainThreadSampler
                 targetTexture == IntPtr.Zero &&
                 HasStoryNonLiveUiStack(urp);
             if (directHomeCandidate ||
-                ((photoStudioCandidate || storyCandidate || costumeCandidate) &&
+                ((ourStreamCandidate || photoStudioCandidate ||
+                    storyCandidate || costumeCandidate) &&
                     _directWorldCandidateCamera == IntPtr.Zero))
             {
                 gameWorldCameraFound = true;
@@ -2768,6 +2839,8 @@ internal sealed class MainThreadSampler
                     CreateStereoSourceProfileSignature(urp);
                 _directWorldCandidateKind = directHomeCandidate
                     ? "home"
+                    : ourStreamCandidate
+                        ? "ourstream"
                     : photoStudioCandidate
                         ? "photo-studio"
                         : storyCandidate

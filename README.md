@@ -12,7 +12,7 @@
 
 ## 현재 릴리스
 
-현재 공개 빌드는 [`v0.1.2`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.2)입니다. Windows x64, DMM PC판, OpenXR 런타임을 대상으로 합니다.
+현재 공개 빌드는 [`v0.1.3`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.3)입니다. Windows x64, DMM PC판, OpenXR 런타임을 대상으로 합니다.
 
 게임 업데이트나 OpenXR 런타임에 따라 동작이 달라질 수 있으므로 설치 전에 릴리스 노트를 확인해 주세요.
 
@@ -46,6 +46,8 @@
 - DMM PC판 전용이며 Steam/모바일판을 지원하지 않습니다.
 - 모든 HMD, OpenXR 런타임, 그래픽 설정 조합을 보장하지 않습니다.
 - **`scsp-localify`의 Free Camera 옵션과 동시에 사용할 수 없습니다.** 게임 실행 전에 `scsp-config.json`의 `baseFreeCamera.enable`을 `false`로 설정해야 합니다. SCSP VR은 이 값을 자동으로 변경하거나 복구하지 않습니다.
+- OurStream 초기 대기 화면에서는 검은 3D 스테레오 환경에 진입합니다. PC 조작 또는 미니 패널 조작으로 대기 화면을 건너뛰세요.
+- OurStream의 3D 스테레오 진입 위치와 각도는 환경에 따라 월드 원점 `(0, 0, 0)`에서 시작할 수 있어 바닥 아래에 나타날 수 있습니다. 진입 후 위치 이동과 각도 조절을 권장합니다.
 - 게임 업데이트 후에는 호환성 확인 전까지 모드를 제거하거나 새 릴리스를 기다리는 편이 안전합니다.
 - VR 런타임 초기화에 실패하면 게임을 계속 실행하도록 설계했지만, 프리릴리스의 모든 실패 경로가 실기기에서 승인된 것은 아닙니다.
 - 게임 파일, 게임 에셋, `scsp-localify` 번역 데이터는 저장소나 릴리스에 포함하지 않습니다.

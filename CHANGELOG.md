@@ -1,5 +1,17 @@
 # SONGforPRISM VR runtime changelog
 
+## 0.1.3 — 2026-09-22
+
+### OurStream support
+
+- Added content-independent 3D stereo rendering for OurStream viewing scenes by recognizing their stable `LiveCamera` and approved UI overlay topology.
+- Added safe stereo-generation replacement when the OurStream camera or UI stack changes.
+
+### Usage notes
+
+- The initial OurStream waiting screen appears as a black 3D stereo environment and must be skipped with PC controls or the mini panel.
+- Depending on the environment, OurStream may begin at world origin `(0, 0, 0)`, potentially below the floor; position and viewing-angle adjustment is recommended.
+
 ## 0.1.2 — 2026-09-20
 
 ### [Issue #1](https://github.com/deadpixel134/scsp-vr/issues/1) improvements

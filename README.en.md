@@ -12,7 +12,7 @@ An unofficial OpenXR VR mod for the DMM PC version of **THE iDOLM@STER Shiny Col
 
 ## Current release
 
-The current public build is [`v0.1.2`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.2). It targets Windows x64, the DMM PC version, and an OpenXR runtime.
+The current public build is [`v0.1.3`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.3). It targets Windows x64, the DMM PC version, and an OpenXR runtime.
 
 Behavior may change with game or OpenXR runtime updates, so read the release notes before installing.
 
@@ -46,6 +46,8 @@ Use **Uninstall** in the installer. Pre-install files are retained for rollback,
 - DMM PC only; Steam and mobile versions are not supported.
 - Not every HMD, OpenXR runtime, or graphics-settings combination is guaranteed.
 - **The `scsp-localify` Free Camera option is incompatible with VR rendering.** Before starting the game, set `baseFreeCamera.enable` to `false` in `scsp-config.json`. SCSP VR does not change or restore this value automatically.
+- The initial OurStream waiting screen enters a black 3D stereo environment. Skip it with PC controls or the mini panel.
+- Depending on the environment, OurStream 3D stereo may initially place and orient the viewer at world origin `(0, 0, 0)`, including below the floor. Adjust position and viewing angle after entering.
 - After a game update, uninstall the mod or wait for compatibility confirmation before launching.
 - Runtime initialization is designed to fail open, but not every failure path has completed real-device acceptance yet.
 - No game binaries, game assets, or `scsp-localify` translation data are included in this repository or its releases.

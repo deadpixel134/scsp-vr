@@ -8,7 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetAudit>false</NuGetAudit>
     <AssemblyName>SongPrismVR.RuntimeBootstrap</AssemblyName>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\SongPrismVR.Core\SongPrismVR.Core.csproj" />

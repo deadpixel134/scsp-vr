@@ -12,7 +12,7 @@ Arca.live VRチャンネル: [VRチャンネル](https://arca.live/b/vrshits)\
 
 ## 現在のリリース
 
-現在の公開ビルドは [`v0.1.2`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.2) です。Windows x64、DMM PC版、OpenXRランタイムを対象としています。
+現在の公開ビルドは [`v0.1.3`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.3) です。Windows x64、DMM PC版、OpenXRランタイムを対象としています。
 
 ゲームやOpenXRランタイムの更新により動作が変わる可能性があるため、インストール前にリリースノートをご確認ください。
 
@@ -46,6 +46,8 @@ Arca.live VRチャンネル: [VRチャンネル](https://arca.live/b/vrshits)\
 - DMM PC版専用です。Steam版・モバイル版には対応していません。
 - すべてのHMD、OpenXRランタイム、グラフィック設定の組み合わせを保証するものではありません。
 - **`scsp-localify` のFree CameraオプションはVRレンダリングと同時に使用できません。** ゲーム起動前に `scsp-config.json` の `baseFreeCamera.enable` を `false` に設定してください。SCSP VRはこの値を自動で変更・復元しません。
+- OurStreamの初期待機画面では、黒い3Dステレオ環境に入ります。PC操作またはミニパネル操作でスキップしてください。
+- 環境によっては、OurStreamの3Dステレオ開始位置と角度がワールド原点 `(0, 0, 0)` となり、床下から始まる場合があります。開始後に位置と視点角度を調整することを推奨します。
 - ゲーム更新後は、互換性が確認されるまでModを削除するか新しいリリースをお待ちください。
 - VRランタイムの初期化失敗時もゲームを続行する設計ですが、すべての失敗経路が実機承認済みではありません。
 - ゲームファイル、ゲームアセット、`scsp-localify` の翻訳データはリポジトリやリリースに含みません。
