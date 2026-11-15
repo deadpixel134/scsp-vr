@@ -42,15 +42,10 @@ public sealed class InstallationEngine
 
     public static string FindInitialGameRoot()
     {
-        DirectoryInfo? current = new(AppContext.BaseDirectory);
-        for (int depth = 0; depth < 7 && current is not null; depth++, current = current.Parent)
-        {
-            if (IsGameRoot(current.FullName))
-            {
-                return current.FullName;
-            }
-        }
-        return Environment.CurrentDirectory;
+        return GameInstallationLocator.FindGameRoot(
+            AppContext.BaseDirectory,
+            Environment.CurrentDirectory,
+            GameInstallationLocator.DmmConfigurationPaths()) ?? Environment.CurrentDirectory;
     }
 
     public static string? FindPackageRoot()

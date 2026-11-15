@@ -10,7 +10,12 @@ List<(string Name, Action Test)> tests = new()
     ("Modified installed files are preserved with state", ModifiedFileProtection),
     ("Payload preflight rejects corruption before writing", PayloadPreflightProtection),
     ("Product preflight requires clean-install dependencies", ProductDependencyProtection),
-    ("Release update version and checksum policy", ReleaseUpdateVersionAndChecksumPolicy)
+    ("Release update version and checksum policy", ReleaseUpdateVersionAndChecksumPolicy),
+    ("DMM discovery reads installed paths without guessing product IDs", DmmGameDiscovery),
+    ("Discovery rejects uninstalled, incomplete, and relative game paths", DmmGameValidation),
+    ("Discovery tolerates absent, corrupt, oversized, and locked configuration", DmmDiscoveryFailures),
+    ("Discovery deduplicates paths and does not choose ambiguous installations", DmmDiscoveryAmbiguity),
+    ("Explicit application and working game directories take priority", LocalGameDiscoveryPriority)
 };
 if (args.Length == 1)
 {
@@ -35,6 +40,106 @@ foreach ((string name, Action test) in tests)
 }
 Console.WriteLine($"Executed {tests.Count} management tests; failures: {failures}");
 return failures == 0 ? 0 : 1;
+
+static string WriteDmmConfiguration(Fixture fixture, string name, params object[] contents)
+{
+    string relative = $"launcher/{name}.cnf";
+    fixture.WriteGameFile(relative, JsonSerializer.Serialize(new { contents }));
+    return Path.Combine(fixture.GameRoot, relative);
+}
+
+static string? DiscoverFromDmm(Fixture fixture, params string[] configurations)
+{
+    string outsideGame = Path.GetDirectoryName(fixture.GameRoot)!;
+    return GameInstallationLocator.FindGameRoot(outsideGame, outsideGame, configurations);
+}
+
+static void DmmGameDiscovery()
+{
+    using Fixture fixture = new();
+    string game = Path.Combine(fixture.GameRoot, "日本語 game folder");
+    foreach (string required in new[] { "imasscprism.exe", "GameAssembly.dll", "UnityPlayer.dll" })
+    {
+        fixture.WriteGameFile($"日本語 game folder/{required}", "fixture");
+    }
+    string configuration = WriteDmmConfiguration(fixture, "dmmgame",
+        new { productId = "other-game", detail = new { installed = true, path = Path.GetTempPath() } },
+        new { productId = "no-hardcoded-product-id", detail = new { installed = true, path = game } });
+    Equal(game, DiscoverFromDmm(fixture, configuration)!);
+}
+
+static void DmmGameValidation()
+{
+    using Fixture fixture = new();
+    string incomplete = Path.Combine(fixture.GameRoot, "incomplete");
+    fixture.WriteGameFile("incomplete/imasscprism.exe", "fixture");
+    string configuration = WriteDmmConfiguration(fixture, "invalid-paths",
+        new { detail = new { installed = false, path = fixture.GameRoot } },
+        new { detail = new { installed = "true", path = fixture.GameRoot } },
+        new { detail = new { installed = true, path = incomplete } },
+        new { detail = new { installed = true, path = "game" } },
+        new { detail = new { installed = true, path = "bad\0path" } },
+        new { detail = new { installed = true, path = 123 } },
+        new { detail = "unexpected" },
+        "unexpected");
+    True(DiscoverFromDmm(fixture, configuration) is null);
+
+    // A default download/install directory is not an installed-game record.
+    fixture.WriteGameFile("launcher/default-only.cnf",
+        JsonSerializer.Serialize(new { defaultInstallDir = fixture.GameRoot }));
+    True(DiscoverFromDmm(fixture, Path.Combine(fixture.GameRoot, "launcher/default-only.cnf")) is null);
+}
+
+static void DmmDiscoveryFailures()
+{
+    using Fixture fixture = new();
+    string valid = WriteDmmConfiguration(fixture, "valid",
+        new { detail = new { installed = true, path = fixture.GameRoot } });
+    string corrupt = Path.Combine(fixture.GameRoot, "launcher/corrupt.cnf");
+    fixture.WriteGameFile("launcher/corrupt.cnf", "{\"contents\":[");
+    string oversized = Path.Combine(fixture.GameRoot, "launcher/oversized.cnf");
+    fixture.WriteGameFile("launcher/oversized.cnf", new string(' ', 4 * 1024 * 1024 + 1));
+    string wrongShape = Path.Combine(fixture.GameRoot, "launcher/shape.cnf");
+    fixture.WriteGameFile("launcher/shape.cnf", "{\"contents\":{}}");
+    string locked = WriteDmmConfiguration(fixture, "locked",
+        new { detail = new { installed = true, path = fixture.GameRoot } });
+    using FileStream held = new(locked, FileMode.Open, FileAccess.Read, FileShare.None);
+    string[] unavailable = { corrupt + ".missing", corrupt, oversized, wrongShape, locked };
+    True(DiscoverFromDmm(fixture, unavailable) is null);
+    Equal(fixture.GameRoot, DiscoverFromDmm(fixture, unavailable.Append(valid).ToArray())!);
+
+    // DMM configuration can have a UTF-8 BOM; reading must handle it.
+    File.WriteAllText(valid, File.ReadAllText(valid), new System.Text.UTF8Encoding(true));
+    Equal(fixture.GameRoot, DiscoverFromDmm(fixture, valid)!);
+}
+
+static void DmmDiscoveryAmbiguity()
+{
+    using Fixture first = new();
+    using Fixture second = new();
+    string duplicate = WriteDmmConfiguration(first, "duplicate",
+        new { detail = new { installed = true, path = first.GameRoot } },
+        new { detail = new { installed = true, path = first.GameRoot + Path.DirectorySeparatorChar } });
+    Equal(first.GameRoot, DiscoverFromDmm(first, duplicate, duplicate)!);
+    string another = WriteDmmConfiguration(second, "another",
+        new { detail = new { installed = true, path = second.GameRoot } });
+    True(DiscoverFromDmm(first, duplicate, another) is null);
+}
+
+static void LocalGameDiscoveryPriority()
+{
+    using Fixture local = new();
+    using Fixture registered = new();
+    string configuration = WriteDmmConfiguration(registered, "registered",
+        new { detail = new { installed = true, path = registered.GameRoot } });
+    string nestedInstaller = Path.Combine(local.GameRoot, "vrmod/tools");
+    Equal(local.GameRoot, GameInstallationLocator.FindGameRoot(
+        nestedInstaller, registered.GameRoot, new[] { configuration })!);
+    Equal(local.GameRoot, GameInstallationLocator.FindGameRoot(
+        Path.GetDirectoryName(local.GameRoot)!, local.GameRoot, new[] { configuration })!);
+    True(GameInstallationLocator.FindGameRoot(
+        Path.GetDirectoryName(local.GameRoot)!, Path.GetDirectoryName(local.GameRoot)!, Array.Empty<string>()) is null);
+}
 
 static void ReleaseUpdateVersionAndChecksumPolicy()
 {

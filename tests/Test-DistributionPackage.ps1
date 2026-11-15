@@ -89,6 +89,9 @@ Assert-Equal 0.65 ([double]$defaultSettings.render.eyeRenderScale) 'Unsafe packa
 Assert-Equal 0.275 ([double]$defaultSettings.render.worldEyeOffsetScale) 'Unsafe packaged eye/head scale.'
 Assert-Equal 'all-off' ([string]$defaultSettings.render.visualEffectMode) 'Unsupported packaged VFX mode.'
 Assert-True ([bool]$defaultSettings.input.requireGameFocus) 'Packaged focus-safety default must be enabled.'
+Assert-True ([bool]$defaultSettings.tracking.worldDrag.enabled) 'Packaged world drag must be enabled by default.'
+Assert-True ([bool]$defaultSettings.tracking.worldDrag.rightGripActivation) 'Packaged world drag must use right Grip.'
+Assert-True ([bool]$defaultSettings.tracking.worldDrag.trackRightHand) 'Packaged world drag must track the right hand.'
 
 $temporaryBase = [System.IO.Path]::GetFullPath(
     (Join-Path ([System.IO.Path]::GetTempPath()) 'SongPrismVR.Distribution.Tests'))

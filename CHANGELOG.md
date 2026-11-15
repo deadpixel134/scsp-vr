@@ -1,5 +1,11 @@
 # SONGforPRISM VR runtime changelog
 
+## 0.1.4 — 2026-11-15
+
+- Added installer startup discovery of DMM-registered game folders, with required-file validation and manual selection when no unique installation is found.
+- Enabled world drag by default in code and distribution settings, using right Grip and right-hand tracking. Existing explicit disabled settings remain unchanged; missing fields use the new default.
+- Updated localized control guides and controller images; removed image footer text and world-drag default-state badges.
+
 ## 0.1.3 — 2026-09-22
 
 ### OurStream support

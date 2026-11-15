@@ -1,75 +1,136 @@
-[한국어](README.md) | [English](README.en.md) | [日本語](README.ja.md)
+## [English](README.md) | [한국어](README.ko.md) | [日本語](README.ja.md)
 
 # SCSP VR
 
-제작자: [@TBluebox12](https://x.com/TBluebox12)\
-아카라이브 가상현실 채널: [가상현실 채널](https://arca.live/b/vrshits)\
-후원: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)
+Creator: [@TBluebox12](https://x.com/TBluebox12)\
+Arca.live Virtual Reality channel: [Virtual Reality channel](https://arca.live/b/vrshits)\
+Support: [buymeacoffee.com/vrshits](https://buymeacoffee.com/vrshits)
 
-**아이돌마스터 샤이니 컬러즈 Song for Prism** DMM PC판을 OpenXR VR로 플레이하기 위한 비공식 모드입니다.
+An unofficial OpenXR VR mod for the DMM PC version of **THE iDOLM@STER Shiny Colors: Song for Prism**.
 
-[문제 보고](https://github.com/deadpixel134/scsp-vr/issues)
+[Download a release](https://github.com/deadpixel134/scsp-vr/releases) · [Full installation guide](docs/en/INSTALLATION.md) · [Full controls guide](docs/en/USAGE.md) · [Report an issue](https://github.com/deadpixel134/scsp-vr/issues)
 
-## 현재 릴리스
+## Requirements and support
 
-현재 공개 빌드는 [`v0.1.3`](https://github.com/deadpixel134/scsp-vr/releases/tag/v0.1.3)입니다. Windows x64, DMM PC판, OpenXR 런타임을 대상으로 합니다.
+- Windows x64 and a working **DMM PC edition** of Song for Prism. Steam and mobile editions are unsupported.
+- A PC VR headset, tracked controllers, and an active OpenXR runtime with Direct3D 12 support. Controller bindings target the Oculus Touch layout (A/B, Grip, trigger, and thumbsticks).
+- The complete release ZIP. Required loader components are included; `scsp-localify` is optional.
 
-게임 업데이트나 OpenXR 런타임에 따라 동작이 달라질 수 있으므로 설치 전에 릴리스 노트를 확인해 주세요.
+If you use `scsp-localify`, disable **Free Camera** before launching: set `baseFreeCamera.enable` to `false` in `scsp-config.json`. SCSP VR does not change or restore this setting for you.
 
-## 주요 기능
+## 1. Install
 
-- 게임 카메라를 OpenXR 스테레오 뷰로 렌더링
-- 세로/가로 화면과 라이브 장면에 맞춘 VR 표시 처리
-- OpenXR 컨트롤러 포인터, 썸스틱 이동, 손으로 월드를 잡아 끄는 이동 및 독립 시점 회전 설정
-- 한국어·영어·일본어 설정 앱과 설치 프로그램
-- 기존 `scsp-localify` 한글 패치의 `version.dll`, 설정, 번역 데이터를 보존하는 공존 설치
-- 한글 패치가 없는 깨끗한 게임 폴더에도 필요한 로더 구성 설치
-- SHA-256 검증, 롤백, 수정 파일 보호를 포함한 설치/제거
-- GitHub 안정판과 프리릴리스를 지원하는 설정 앱 자동 업데이트
+1. Download `SongPrismVR-v*.zip` and its matching `.zip.sha256` file from [Releases](https://github.com/deadpixel134/scsp-vr/releases). Read that release's notes before installing.
+2. Fully close the game and make sure `imasscprism.exe` is no longer running.
+3. Extract the entire ZIP to a **separate folder outside the game directory**.
+4. Run `SongPrismVR.Installer.exe` from that folder.
+5. Select the game directory containing `imasscprism.exe`, `GameAssembly.dll`, and `UnityPlayer.dll`, then select **Install**.
+6. Select **Open settings** after installation. You can start with the defaults.
 
-## 설치
+The source installer can prefill a game folder from DMM's installed-game list after checking the three game files. Confirm the folder before installing; use **Browse** if no unique installation is found. Older released installers may require manual selection.
 
-1. [Releases](https://github.com/deadpixel134/scsp-vr/releases)에서 최신 `SongPrismVR-v*.zip`과 같은 이름의 `.sha256` 파일을 받습니다.
-2. ZIP을 임의의 폴더에 완전히 압축 해제합니다.
-3. 게임을 종료한 상태에서 `SongPrismVR.Installer.exe`를 실행합니다.
-4. `imasscprism.exe`가 있는 게임 폴더를 확인하고 **설치**를 누릅니다.
-5. 설치 후 게임 폴더의 `vrmod/tools/SongPrismVR.Configurator.exe`에서 OpenXR와 조작 설정을 변경할 수 있습니다.
+The installer checks the package before copying files and backs up replaced files under `game directory\vrmod\rollback\`. It supports both clean installations and existing `scsp-localify` installations, preserving existing Localify files and VR settings. See the [installation guide](docs/en/INSTALLATION.md) for checksum verification and recovery details.
 
-업데이트가 발견되면 설정 앱이 릴리스 ZIP을 내려받아 SHA-256을 확인한 뒤 별도 스테이징 폴더에서 설치 프로그램을 실행합니다. 게임 실행 중에는 업데이트하지 않습니다.
+### Already installed? Update
 
-## 제거와 공존
+**Automatic:** fully close the game, then open `game directory\vrmod\tools\SongPrismVR.Configurator.exe`. Opening the configurator checks GitHub and automatically downloads, verifies, and installs a newer eligible release, then reopens the configurator. **Stable releases and prereleases are both eligible; there is no Update / Later confirmation.** Progress and errors appear in the status bar. Use **Check for updates** to check again. Installation is deferred while the game is running.
 
-설치 프로그램의 **제거**를 사용하세요. 설치 전 파일은 롤백용으로 보관되며, 사용자가 수정한 파일은 추측으로 삭제하지 않습니다. `scsp-localify`가 있든 없든 설치할 수 있고, 기존 Localify 파일과 사용자 VR 설정은 덮어쓰지 않습니다.
+**Manual:** download a new ZIP and matching checksum from [Releases](https://github.com/deadpixel134/scsp-vr/releases), extract it to a separate folder, and run the new installer against the **same game directory**. Select **Update** (or **Reinstall** for the same version). Existing VR settings are preserved, and replaced files are backed up for rollback.
 
-## 알려진 제한사항
+## 2. Launch in VR
 
-- DMM PC판 전용이며 Steam/모바일판을 지원하지 않습니다.
-- 모든 HMD, OpenXR 런타임, 그래픽 설정 조합을 보장하지 않습니다.
-- **`scsp-localify`의 Free Camera 옵션과 동시에 사용할 수 없습니다.** 게임 실행 전에 `scsp-config.json`의 `baseFreeCamera.enable`을 `false`로 설정해야 합니다. SCSP VR은 이 값을 자동으로 변경하거나 복구하지 않습니다.
-- OurStream 초기 대기 화면에서는 검은 3D 스테레오 환경에 진입합니다. PC 조작 또는 미니 패널 조작으로 대기 화면을 건너뛰세요.
-- OurStream의 3D 스테레오 진입 위치와 각도는 환경에 따라 월드 원점 `(0, 0, 0)`에서 시작할 수 있어 바닥 아래에 나타날 수 있습니다. 진입 후 위치 이동과 각도 조절을 권장합니다.
-- 게임 업데이트 후에는 호환성 확인 전까지 모드를 제거하거나 새 릴리스를 기다리는 편이 안전합니다.
-- VR 런타임 초기화에 실패하면 게임을 계속 실행하도록 설계했지만, 프리릴리스의 모든 실패 경로가 실기기에서 승인된 것은 아닙니다.
-- 게임 파일, 게임 에셋, `scsp-localify` 번역 데이터는 저장소나 릴리스에 포함하지 않습니다.
+1. Connect your headset to the PC and start your PC VR connection software.
+2. In that software, select the OpenXR runtime you intend to use as the **active OpenXR runtime**. Connect the controllers as well.
+3. Open the **DMM launcher** on the PC desktop, including the desktop viewed inside your headset, and launch Song for Prism normally. The installer is not a game launcher.
+4. Keep the game window in the Windows foreground to use controller clicks and back input.
+5. Check the initial flat panel, then enter a supported 3D scene to check stereo rendering.
 
-## 개발
+With VDXR, choose Virtual Desktop OpenXR in Virtual Desktop Streamer; with SteamVR or Link / Air Link, use that software's OpenXR runtime setting. These are setup pointers, not claims of SCSP VR hardware validation. See [runtime setup](docs/en/INSTALLATION.md#openxr-runtimes).
 
-관리/설치 계층 테스트:
+## 3. Learn the display and controls
 
-```powershell
-dotnet run --project tests/SongPrismVR.Management.Tests/SongPrismVR.Management.Tests.csproj -c Release
+Supported **3D scenes appear in stereo VR**, including 3D Live, Photo Studio, and OurStream viewing. The runtime also recognizes matching Home, costume, and story camera layouts; support depends on the actual scene layout. **Menus, video, and scenes without a supported 3D source use a flat panel**. Portrait and landscape content keep their aspect ratio. A brief pause or flat panel can occur during scene changes.
+
+To operate the game UI in 3D, **press left Grip to show the hand panel**, bring your left hand into view, then point and click with the right controller. The hand panel starts off. The front panel used outside stereo rendering appears automatically and is separate from this hand-panel toggle.
+
+![SCSP VR default controls on Meta Quest 3 Touch Plus controllers](docs/images/vr-controls-en.png)
+
+Controller artwork: [Meta](docs/images/README.md).
+
+The table shows fresh-install defaults with Touch-style controllers. Existing settings survive updates and may differ.
+
+| Action | Default input |
+|---|---|
+| Aim at the panel | Point with the right controller |
+| Click / hold and drag | A button or right trigger |
+| Back | B button (`Esc`), while pointing at a panel |
+| Move in 3D | Right thumbstick |
+| Turn the view | Left thumbstick — 30° snap by default |
+| Show / hide the hand panel in 3D | Left Grip |
+| World drag / fine positioning | Hold right Grip and move the right hand |
+
+Use the left stick horizontally to turn left/right and vertically to tilt the view up/down; return it to center between snap turns. Right-stick movement follows your current viewing direction. Looking up or down while moving forward lets you move vertically. World drag is enabled in new defaults. If an existing installation has it disabled, select **Enable world dragging** in the configurator's **Input** tab. Hold right Grip and move your hand to move the viewpoint in the opposite direction; release Grip to keep that position. Stick movement and world drag can be used together.
+
+Live uses head position and rotation (6DoF) by default, without synchronizing your position to the game's camera. If pulling the trigger disturbs your aim, use **A** to click. The mouse remains usable. Thumbstick scrolling is off by default and can be enabled in settings. See [controls and input conflicts](docs/en/USAGE.md).
+
+**OurStream:** skip the initial black waiting screen with PC controls or the hand panel. It may start you below the floor or facing the wrong direction; adjust your position and view angle after entering.
+
+## 4. Change settings
+
+Fully close the game, run the program below, change and **Save** settings, then restart the game. Opening this app also checks for automatic updates as described above.
+
+```text
+game directory\vrmod\tools\SongPrismVR.Configurator.exe
 ```
 
-핵심 정책 테스트:
+Choose **Korean, English, or Japanese** in the app.
 
-```powershell
-dotnet run --project tests/SongPrismVR.Core.Tests/SongPrismVR.Core.Tests.csproj -c Release
-```
+| What to adjust | Settings |
+|---|---|
+| Image quality and performance | Per-eye render scale: 0.50–2.00, default 0.65; increase gradually |
+| Character size and depth | Separate Live / non-Live space and scale profiles; eye spacing, head movement, and stick movement scales |
+| Live viewpoint | Synchronize to game camera position — off by default |
+| Hand panel | Panel and pointer hands, initial visibility, position, size, rotation, toggle button |
+| Controls | Click/back buttons, trigger click, optional stick scroll, movement hand and speed, world drag, independent view turning |
+| Visual effects | VFX preset and individual effects — all off by default |
 
-배포 빌드는 지원되는 게임 작업공간을 지정해 `scripts/Build-DistributionPackage.ps1 -GameRoot <게임 폴더>`를 사용합니다. 게임 및 제3자 바이너리는 저장소에 커밋하지 않습니다.
+Selecting the left hand for movement assigns turning to the right stick. Default movement speed is 1.95 m/s; snap angles of 15° / 30° / 45° / 60° and smooth turning are available. Settings are stored in `game directory\vrmod\config\settings.json`. See the [usage guide](docs/en/USAGE.md) for details.
 
-## 라이선스와 크레딧
+## Uninstall or roll back
 
-SCSP VR 소스는 [GNU General Public License v3.0](LICENSE)으로 배포됩니다. 배포 파일에 포함되는 OpenXR Loader, .NET Runtime, Unity Doorstop, Dobby에는 각각의 라이선스가 적용됩니다. 자세한 출처와 조건은 [CREDITS.md](CREDITS.md) 및 [THIRD_PARTY_NOTICES.txt](release-assets/THIRD_PARTY_NOTICES.txt)를 확인하세요.
+Close the game and run `SongPrismVR.Installer.exe` from an extracted release. Select the game directory and use **Roll back** if a previous installation is available, or **Uninstall** otherwise. With multiple installation layers, rollback restores one layer at a time; repeat until **Uninstall** is available to remove the mod completely.
 
-본 프로젝트는 비공식 팬 프로젝트이며 Bandai Namco Entertainment, Bandai Namco Studios, THE IDOLM@STER 또는 관련 권리자와 제휴하거나 승인을 받지 않았습니다. 게임명, 캐릭터, 로고, 상표 및 게임 데이터의 권리는 각 권리자에게 있습니다.
+User VR settings, logs, and existing Localify files are preserved. Modified files or missing backups can prevent removal; follow the installer's message instead of deleting files by guesswork. Keep `vrmod/install-state.json` and `vrmod/rollback/` until removal is complete. See [recovery details](docs/en/INSTALLATION.md#uninstall-and-rollback).
+
+## Troubleshooting
+
+| Symptom | Check first |
+|---|---|
+| No VR display | PC VR connection, active OpenXR runtime, and **Enable VR mode** in settings |
+| Display works but clicks do not | Bring the game window to the foreground and point at the displayed panel |
+| Hand panel is missing in 3D | Press left Grip and bring the tracked left hand into view |
+| World drag does nothing | Check whether existing settings have it disabled; check activation/tracking hands and panel/trigger input conflicts |
+| OurStream is black or starts below the floor | Skip the waiting screen, then use movement and view turning |
+| Rendering conflicts with Localify | Disable `baseFreeCamera.enable` in `scsp-config.json` before launching |
+| Settings do not apply | Save with the game fully closed, then relaunch; confirm the selected game directory |
+| Low frame rate or unstable graphics | Lower per-eye render scale and start with VFX off |
+| Characters or hair look displaced, or characters disappear in VR | A documented stereo limitation; see [known limitations](docs/DEVELOPMENT.md) |
+| Problems after a game update | Check release notes and compatibility reports; close the game and roll back or uninstall if needed |
+
+For [issue reports](https://github.com/deadpixel134/scsp-vr/issues), include the game/mod versions, headset, runtime, affected scene, and reproduction steps. Runtime logs are in `vrmod/logs/`; automatic-update errors also go to `%LOCALAPPDATA%\SongPrismVR\update.log`. Review logs for personal or authentication information before sharing.
+
+## Further documentation and development
+
+- [Installation and recovery](docs/en/INSTALLATION.md) · [Usage and controls](docs/en/USAGE.md)
+- [Development, validation scope, and known limitations](docs/DEVELOPMENT.md) (English)
+- [Changelog](CHANGELOG.md) · [Release notes](https://github.com/deadpixel134/scsp-vr/releases)
+- [Photo Studio and world-drag notes](RELEASE_NOTES_v0.1.2.md) · [OurStream notes](RELEASE_NOTES_v0.1.3.md) (Korean)
+- [Legacy English README address](README.en.md)
+
+## License and rights
+
+SCSP VR source is distributed under the [GNU General Public License v3.0](LICENSE). The bundled OpenXR Loader, .NET Runtime, Unity Doorstop, and Dobby retain their respective licenses. See [Credits](CREDITS.md) and [Third-party notices](release-assets/THIRD_PARTY_NOTICES.txt).
+
+Game binaries, game assets, and `scsp-localify` translation data are not included in this repository or its releases.
+
+> This is an unofficial fan project and is not affiliated with or endorsed by Bandai Namco Entertainment, Bandai Namco Studios, THE IDOLM@STER, or any related rights holder. Game names, characters, logos, trademarks, and game data belong to their respective owners. A legitimate game installation is required.

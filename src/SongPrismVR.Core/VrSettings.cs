@@ -107,7 +107,7 @@ public sealed class VrTrackingSettings
 
 public sealed class VrWorldDragSettings
 {
-    public bool Enabled { get; set; }
+    public bool Enabled { get; set; } = true;
 
     public bool LeftGripActivation { get; set; }
 

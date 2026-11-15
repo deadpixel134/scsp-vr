@@ -57,6 +57,7 @@ var tests = new (string Name, Action Run)[]
     ("VR settings repair legacy manual VFX mode", VrSettingsRepairLegacyManualVfxMode),
     ("VR settings load swapped movement hand", VrSettingsLoadSwappedMovementHand),
     ("VR settings migrate the combined navigation toggle", VrSettingsMigrateCombinedNavigationToggle),
+    ("World drag defaults apply only to omitted settings and preserve explicit opt-out", WorldDragDefaultAndExplicitOptOut),
     ("VR settings reject incomplete world drag", VrSettingsRejectIncompleteWorldDrag),
     ("VR settings repair invalid roles and ranges", VrSettingsRepairInvalidValues),
     ("VR settings reject unsupported schema", VrSettingsRejectUnsupportedSchema),
@@ -843,7 +844,7 @@ static void VrSettingsPreserveProductDefaults()
     Equal(VrHand.Right, result.Settings.Tracking.LocomotionHand);
     Equal(1.95f, result.Settings.Tracking.LocomotionSpeed);
     Equal(true, result.Settings.Tracking.ViewTurnEnabled!.Value);
-    Equal(false, result.Settings.Tracking.WorldDrag.Enabled);
+    Equal(true, result.Settings.Tracking.WorldDrag.Enabled);
     Equal(true, result.Settings.Tracking.WorldDrag.RightGripActivation);
     Equal(true, result.Settings.Tracking.WorldDrag.TrackRightHand);
     Equal(VrViewTurnMode.Snap, result.Settings.Tracking.ViewTurnMode);
@@ -1121,9 +1122,34 @@ static void VrSettingsMigrateCombinedNavigationToggle()
     False(result.UsedFallback);
     Equal(false, result.Settings.Tracking.LocomotionEnabled);
     Equal(false, result.Settings.Tracking.ViewTurnEnabled!.Value);
-    Equal(false, result.Settings.Tracking.WorldDrag.Enabled);
+    Equal(true, result.Settings.Tracking.WorldDrag.Enabled);
     Equal(true, result.Settings.Tracking.WorldDrag.RightGripActivation);
     Equal(true, result.Settings.Tracking.WorldDrag.TrackRightHand);
+}
+
+static void WorldDragDefaultAndExplicitOptOut()
+{
+    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+    foreach (string json in new[] { "{}", "{\"tracking\":{}}", "{\"tracking\":{\"worldDrag\":{}}}" })
+    {
+        VrSettingsValidationResult result = VrSettingsValidator.Validate(
+            JsonSerializer.Deserialize<VrSettings>(json, options));
+        False(result.UsedFallback);
+        True(result.Settings.Tracking.WorldDrag.Enabled);
+        True(result.Settings.Tracking.WorldDrag.RightGripActivation);
+        True(result.Settings.Tracking.WorldDrag.TrackRightHand);
+        var drag = new VrWorldDragState();
+        True(drag.Update(result.Settings.Tracking.WorldDrag, DragFrame(rightGrip: 1f), out _));
+        Equal(VrWorldDragActivation.RightGrip, drag.Owner!.Value);
+    }
+
+    VrSettingsValidationResult optedOut = VrSettingsValidator.Validate(
+        JsonSerializer.Deserialize<VrSettings>(
+            "{\"tracking\":{\"worldDrag\":{\"enabled\":false}}}", options));
+    False(optedOut.UsedFallback);
+    False(optedOut.Settings.Tracking.WorldDrag.Enabled);
+    var disabledDrag = new VrWorldDragState();
+    False(disabledDrag.Update(optedOut.Settings.Tracking.WorldDrag, DragFrame(rightGrip: 1f), out _));
 }
 
 static void VrSettingsRejectIncompleteWorldDrag()

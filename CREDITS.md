@@ -14,4 +14,6 @@ SCSP VR 자체 소스의 저작권은 Copyright (C) 2026 deadpixel134 및 기여
 
 배포 ZIP에 포함되는 정확한 고지는 [release-assets/THIRD_PARTY_NOTICES.txt](release-assets/THIRD_PARTY_NOTICES.txt)를 따릅니다. Dobby의 Apache-2.0 전문도 배포 파일에 포함됩니다. 외부 프로젝트의 이름은 출처 식별 목적으로만 사용합니다.
 
+README와 조작 안내의 Quest 3 Touch Plus 도해는 [Meta Quest Hardware Art](https://developers.meta.com/vr/downloads/package/oculus-controller-art/)의 공식 이미지를 사용하며, SCSP VR 조작 설명을 덧붙였습니다. Copyright © Facebook Technologies, LLC and its affiliates. All rights reserved. 원본 도해에는 소스 코드의 GPL-3.0 대신 Meta의 별도 사용 조건이 적용됩니다. [이미지 출처·사용 조건](docs/images/README.md)과 [원본 고지](docs/images/meta/Oculus-lineart-attribution.txt)를 참고하십시오. Meta와의 제휴·후원·승인을 뜻하지 않습니다.
+
 아이돌마스터 샤이니 컬러즈 Song for Prism, 게임 데이터, 캐릭터, 로고, 상표와 관련 저작물은 이 저장소의 GPL-3.0 적용 대상이 아니며 각 권리자에게 귀속됩니다. Localify 번역 데이터는 이 프로젝트에 포함하지 않습니다.

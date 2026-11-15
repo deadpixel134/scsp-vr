@@ -25,7 +25,7 @@
     "locomotionSpeed": 1.95,
     "viewTurnEnabled": true,
     "worldDrag": {
-      "enabled": false,
+      "enabled": true,
       "leftGripActivation": false,
       "leftTriggerActivation": false,
       "rightGripActivation": true,
