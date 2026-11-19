@@ -9,18 +9,58 @@ Source: https://github.com/KhronosGroup/OpenXR-SDK-Source/releases/tag/release-1
 License: Apache-2.0 OR MIT. This distribution elects the MIT option.
 Copyright (c) The Khronos Group Inc.
 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 2. .NET Runtime 6.0.7 (bundled for the Unity runtime bootstrap)
 Source: https://github.com/dotnet/runtime/tree/v6.0.7
 License: MIT
 License: https://github.com/dotnet/runtime/blob/v6.0.7/LICENSE.TXT
 Third-party notices: https://github.com/dotnet/runtime/blob/v6.0.7/THIRD-PARTY-NOTICES.TXT
+Binary distribution: https://github.com/BepInEx/dotnet-runtime/releases/tag/6.0.7
+The MIT License (MIT)
+
 Copyright (c) .NET Foundation and Contributors
+
+All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 3. .NET Windows Desktop Runtime 10 (bundled into the self-contained installer and configurator)
 Source: https://github.com/dotnet/runtime
 License: MIT
-License: https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
-Third-party notices: https://github.com/dotnet/runtime/blob/main/THIRD-PARTY-NOTICES.TXT
+The release ZIP includes the legal notices from the exact runtime packs used for publish.
 Copyright (c) .NET Foundation and Contributors
 
 4. Unity Doorstop 4.5.0 (winhttp.dll bundled)
@@ -30,7 +70,15 @@ License: https://github.com/NeighTools/UnityDoorstop/blob/v4.5.0/LICENSE
 The release uses an unmodified Doorstop binary to start the packaged .NET runtime.
 
 5. Dobby (BepInEx/core/dobby.dll bundled)
-Source: https://github.com/jmpews/Dobby
+Source: https://github.com/BepInEx/Dobby/tree/v1.0.5
 License: Apache-2.0
 The complete license text is included at vrmod/licenses/Dobby-Apache-2.0.txt.
 If another installation already owns the target file, the installer preserves it.
+
+Additional release materials
+----------------------------
+The release ZIP includes licenses/UnityDoorstop-4.5.0-source.zip.
+The packaged copy of this notice includes the complete LGPL text, the
+mini CoreCLR 6.0.7 third-party notices, and the license and notice texts
+from the self-contained installer and configurator's resolved runtime packs. It also includes the
+upstream JsonCpp license for the copy built into the Khronos loader.

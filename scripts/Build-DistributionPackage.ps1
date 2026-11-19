@@ -69,13 +69,17 @@ foreach ($target in @($finalPackage, $finalZip, $checksumPath)) {
 try {
     [System.IO.Directory]::CreateDirectory($payloadRoot) | Out-Null
 
+    $noticeTargets = Join-Path $PSScriptRoot 'RuntimeNotices.targets'
+    $configNoticeDirectory = "$configuratorPublish-notices"
+    $installerNoticeDirectory = "$installerPublish-notices"
+
     dotnet publish (Join-Path $vrmodRoot 'src\SongPrismVR.Configurator\SongPrismVR.Configurator.csproj') `
         -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None `
-        -o $configuratorPublish
+        "-p:CustomAfterMicrosoftCommonTargets=$noticeTargets" "-p:ThirdPartyNoticeDirectory=$configNoticeDirectory" -o $configuratorPublish
     Assert-LastExitCode 'Self-contained Configurator publish failed.'
     dotnet publish (Join-Path $vrmodRoot 'src\SongPrismVR.Installer\SongPrismVR.Installer.csproj') `
         -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None `
-        -o $installerPublish
+        "-p:CustomAfterMicrosoftCommonTargets=$noticeTargets" "-p:ThirdPartyNoticeDirectory=$installerNoticeDirectory" -o $installerPublish
     Assert-LastExitCode 'Self-contained Installer publish failed.'
 
     Copy-OwnedFile (Join-Path $gameRoot 'winhttp.dll') (Join-Path $payloadRoot 'winhttp.dll')
@@ -118,6 +122,15 @@ try {
     }
     Copy-OwnedFile (Join-Path $installerPublish 'SongPrismVR.Installer.exe') `
         (Join-Path $packageRoot 'SongPrismVR.Installer.exe')
+
+    & (Join-Path $PSScriptRoot 'Complete-DistributionNotices.ps1') -PackageRoot $packageRoot -PayloadRoot $payloadRoot -RuntimeNoticeDirectory @($configNoticeDirectory, $installerNoticeDirectory)
+    @"
+SongPrism VR project source for this release (GPL-3.0)
+https://github.com/deadpixel134/scsp-vr/tree/v$Version
+
+Unity Doorstop 4.5.0 corresponding source
+licenses/UnityDoorstop-4.5.0-source.zip
+"@ | Set-Content -LiteralPath (Join-Path $packageRoot 'SOURCE-CODE.txt') -Encoding utf8
 
     $manifestFiles = New-Object System.Collections.Generic.List[object]
     foreach ($file in Get-ChildItem -LiteralPath $payloadRoot -File -Recurse | Sort-Object FullName) {
